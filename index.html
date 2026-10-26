@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0c">
+<link rel="manifest" href="manifest.json">
+<title>Profit</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--text:#0d0d0f;--muted:#8b8b92;--line:#ececeb;--dark:#0b0b0c;--green:#0e9f6e;--red:#e5484d}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:520px;margin:auto;min-height:100vh;padding:22px 16px 70px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.brand{font-size:21px;font-weight:950;letter-spacing:-.5px}.date{font-size:13px;color:var(--muted);font-weight:750}
+.hero{background:var(--dark);color:#fff;border-radius:28px;padding:24px;box-shadow:0 14px 40px rgba(0,0,0,.12)}
+.hero-label{color:#aaaab0;font-size:13px;font-weight:800}.hero-value{font-size:46px;line-height:1;font-weight:950;letter-spacing:-2px;margin-top:10px}
+.hero-sub{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}.hero-sub div{min-width:0}.hero-sub span{display:block;color:#8f8f96;font-size:11px;font-weight:850;text-transform:uppercase;margin-bottom:5px}.hero-sub strong{font-size:17px;font-weight:900}
+.positive{color:#31d38c!important}.negative{color:#ff686d!important}
+.section-title{margin:24px 2px 10px;font-size:14px;color:#65656b;font-weight:850}
+.card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:18px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.chart-head strong{font-size:14px}.chart-head span{font-size:12px;color:var(--muted)}
+canvas{width:100%;height:180px;display:block}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{background:#f8f8f7;border-radius:18px;padding:14px}.field label{display:block;color:var(--muted);font-size:11px;font-weight:850;text-transform:uppercase;margin-bottom:8px}.field input{width:100%;border:0;outline:0;background:transparent;font-size:23px;font-weight:900;color:var(--text)}
+.optional-field{margin-top:12px;background:#f8f8f7;border-radius:18px;padding:14px}.optional-field label{display:block;color:var(--muted);font-size:11px;font-weight:850;text-transform:uppercase;margin-bottom:8px}.optional-field input{width:100%;border:0;outline:0;background:transparent;font-size:16px;font-weight:800;color:var(--text)}.save{width:100%;margin-top:14px;border:0;background:var(--dark);color:#fff;border-radius:18px;padding:16px;font-size:16px;font-weight:900}.tag{display:inline-block;margin-top:7px;padding:4px 8px;border-radius:999px;background:#f1f1ef;color:#66666d;font-size:11px;font-weight:850}
+.list{display:flex;flex-direction:column;gap:10px}.item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px 16px;display:flex;justify-content:space-between;align-items:center}.item-left strong{display:block;font-size:15px}.item-left span{display:block;color:var(--muted);font-size:12px;margin-top:4px}.item-right{text-align:right}.item-right strong{display:block;font-size:17px;font-weight:950}.delete{border:0;background:transparent;color:#b0b0b6;font-size:12px;font-weight:800;padding:4px 0 0 8px}.empty{text-align:center;color:var(--muted);font-size:13px;padding:24px}.install-btn{width:100%;margin-top:12px;border:1px solid var(--line);background:white;color:var(--text);border-radius:18px;padding:14px;font-size:15px;font-weight:900;display:none}.legal{display:flex;justify-content:center;gap:14px;margin:24px 0 4px;font-size:12px}.legal a{color:#777;text-decoration:none;font-weight:800}.ad-slot{margin-top:16px;border:1px dashed #d5d5d2;border-radius:18px;padding:12px;text-align:center;color:#aaa;font-size:11px;font-weight:800;min-height:46px;display:flex;align-items:center;justify-content:center}
+.range{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}.range button{border:0;background:#f2f2f1;padding:8px 11px;border-radius:12px;font-weight:800;color:#777}.range button.active{background:#111;color:#fff}.compare{margin-top:10px;font-size:12px;font-weight:850;color:#777}.compare .up{color:var(--green)}.compare .down{color:var(--red)}.mode{display:flex;gap:8px;margin-bottom:12px}.mode button{flex:1;border:0;background:#f2f2f1;color:#777;border-radius:14px;padding:10px;font-weight:850}.mode button.active{background:#111;color:#fff}.month-wrap{display:none;margin-bottom:12px}.month-wrap.active{display:block}.month-wrap input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;font-size:16px;font-weight:800;background:#fff}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">Profit</div><div id="todayLabel" class="date"></div></div>
+
+  <div class="hero">
+    <div class="hero-label">Today’s profit</div>
+    <div id="profit" class="hero-value">$0</div>
+    <div class="hero-sub">
+      <div><span>Revenue</span><strong id="revenueTotal">$0</strong></div>
+      <div><span>Expenses</span><strong id="expenseTotal">$0</strong></div>
+      <div><span>Profit %</span><strong id="profitPercent">0%</strong></div>
+    </div>
+    <div id="todayCompare" class="compare">vs yesterday —</div>
+  </div>
+
+  <div class="section-title">Profit trend</div>
+  <div class="card">
+    <div class="chart-head"><strong id="chartTitle">Last 7 days</strong><span id="chartTotal">$0 · 0%</span></div>
+    <div class="range">
+      <button class="active" data-days="7">7D</button>
+      <button data-days="30">30D</button>
+      <button data-days="90">90D</button>
+      <button data-days="365">1Y</button>
+    </div>
+    <canvas id="chart"></canvas>
+    <div id="periodCompare" class="compare">vs previous period —</div>
+  </div>
+
+  <div class="section-title" id="entryTitle">Add today</div>
+  <div class="card">
+    <div class="mode">
+      <button id="dailyMode" class="active">Daily</button>
+      <button id="monthlyMode">Monthly</button>
+    </div>
+    <div id="monthWrap" class="month-wrap">
+      <input id="monthInput" type="month">
+    </div>
+    <div class="row">
+      <div class="field"><label>Revenue</label><input id="revenue" type="number" inputmode="decimal" placeholder="0"></div>
+      <div class="field"><label>Expenses</label><input id="expenses" type="number" inputmode="decimal" placeholder="0"></div>
+    </div>
+    <div class="optional-field">
+      <label>Title / Category <span style="text-transform:none;font-weight:700">(optional)</span></label>
+      <input id="title" type="text" maxlength="40" placeholder="e.g. Relyvora, Sales, Ads">
+    </div>
+    <button id="save" class="save">Save today</button>
+  </div>
+
+  <div class="section-title">Recent days</div>
+  <div id="history" class="list"></div>
+  <button id="installBtn" class="install-btn">Install app</button>
+  <div id="adSlot" class="ad-slot">Ad space</div>
+  <div class="legal"><a href="about.html">About</a><a href="privacy.html">Privacy</a></div>
+</div>
+
+<script>
+const STORE='simpleProfit_v3';
+let entries=JSON.parse(localStorage.getItem(STORE)||'[]'); entries=entries.map((e,i)=>({...e,mode:e.mode||'daily',id:e.id||('old_'+i+'_'+(e.date||e.month||''))}));
+let chartDays=7;
+let entryMode='daily';
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
+function money(v){const n=Number(v)||0,abs=Math.abs(n);let o;if(abs>=1e6)o=(n/1e6).toFixed(abs>=1e7?0:1)+'M';else if(abs>=1e3)o=(n/1e3).toFixed(abs>=1e4?0:1)+'k';else o=n.toFixed(n%1===0?0:2);return '$'+o}
+function shortDate(s){return new Date(s+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+function entryDate(e){
+  if(e.mode==='monthly' && e.month) return e.month+'-01';
+  return e.date;
+}
+function grouped(){
+  const g={}; entries.forEach(e=>{const d=entryDate(e); if(!d)return; g[d]??={revenue:0,expenses:0};g[d].revenue+=+e.revenue||0;g[d].expenses+=+e.expenses||0}); return g;
+}
+function dateShift(ds,days){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+function totalsBetween(start,end){
+  let revenue=0,expenses=0;
+  entries.forEach(e=>{const d=entryDate(e);if(d && d>=start && d<=end){revenue+=+e.revenue||0;expenses+=+e.expenses||0}});
+  return {revenue,expenses,profit:revenue-expenses};
+}
+function changeText(current,previous){
+  if(previous===0){
+    if(current===0) return {text:'No change',cls:''};
+    return {text:current>0?'More than previous period':'Less than previous period',cls:current>0?'up':'down'};
+  }
+  const pct=((current-previous)/Math.abs(previous))*100;
+  const rounded=(Math.round(Math.abs(pct)*10)/10).toFixed(1).replace('.0','');
+  return {text:(pct>=0?'+':'-')+rounded+'% '+(pct>=0?'more':'less'),cls:pct>=0?'up':'down'};
+}
+function drawChart(){
+  const c=$('chart'),ctx=c.getContext('2d'),w=c.clientWidth,h=180,dpr=devicePixelRatio||1;
+  c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const g=grouped(), pts=[];
+  const end=new Date();end.setHours(0,0,0,0);
+  for(let i=chartDays-1;i>=0;i--){const d=new Date(end);d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const v=g[ds]||{revenue:0,expenses:0};pts.push({date:ds,value:v.revenue-v.expenses})}
+  const vals=pts.map(p=>p.value),min=Math.min(0,...vals),max=Math.max(0,...vals);
+  const span=(max-min)||1,p={l:8,r:8,t:12,b:24},W=w-p.l-p.r,H=h-p.t-p.b;
+  const x=i=>p.l+(pts.length===1?W/2:i*W/(pts.length-1)),y=v=>p.t+(max-v)/span*H;
+  ctx.strokeStyle='#ececeb';ctx.lineWidth=1;
+  [0,.5,1].forEach(t=>{const yy=p.t+t*H;ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(w-p.r,yy);ctx.stroke()});
+  const zy=y(0);ctx.strokeStyle='#d8d8d6';ctx.beginPath();ctx.moveTo(p.l,zy);ctx.lineTo(w-p.r,zy);ctx.stroke();
+  ctx.beginPath();pts.forEach((pt,i)=>i?ctx.lineTo(x(i),y(pt.value)):ctx.moveTo(x(i),y(pt.value)));
+  ctx.strokeStyle='#111';ctx.lineWidth=2.8;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+  if(chartDays<=90){pts.forEach((pt,i)=>{ctx.beginPath();ctx.arc(x(i),y(pt.value),3,0,Math.PI*2);ctx.fillStyle=pt.value>=0?'#0e9f6e':'#e5484d';ctx.fill()})};
+  ctx.fillStyle='#98989e';ctx.font='11px system-ui';ctx.textAlign='center';
+  const idx=[0,Math.floor((pts.length-1)/2),pts.length-1]; [...new Set(idx)].forEach(i=>ctx.fillText(shortDate(pts[i].date),x(i),h-5));
+  const total=pts.reduce((s,p)=>s+p.value,0);
+  const startDate=pts[0]?.date||today(), endDate=pts[pts.length-1]?.date||today();
+  const period=totalsBetween(startDate,endDate);
+  const periodPct=period.revenue>0?(period.profit/period.revenue)*100:0;
+  $('chartTotal').textContent=money(period.profit)+' · '+(Math.round(periodPct*10)/10).toFixed(1).replace('.0','')+'%';
+  $('chartTitle').textContent=chartDays===365?'Last 1 year':'Last '+chartDays+' days';
+  const prevEnd=dateShift(startDate,-1), prevStart=dateShift(prevEnd,-chartDays+1);
+  const prev=totalsBetween(prevStart,prevEnd);
+  const cmp=changeText(period.profit,prev.profit);
+  $('periodCompare').innerHTML='vs previous period · <span class="'+cmp.cls+'">'+cmp.text+'</span>';
+}
+function refresh(){
+  const t=today(),te=entries.filter(x=>(x.mode||'daily')==='daily' && x.date===t),rev=te.reduce((a,b)=>a+(+b.revenue||0),0),exp=te.reduce((a,b)=>a+(+b.expenses||0),0),p=rev-exp;
+  $('profit').textContent=money(p);$('profit').className='hero-value '+(p>0?'positive':p<0?'negative':'');
+  $('revenueTotal').textContent=money(rev);$('expenseTotal').textContent=money(exp);
+  const pct=rev>0?(p/rev)*100:0;
+  $('profitPercent').textContent=(Math.round(pct*10)/10).toFixed(1).replace('.0','')+'%';
+  $('profitPercent').className=pct>0?'positive':pct<0?'negative':'';
+  const yesterday=dateShift(t,-1);
+  const ye=entries.filter(x=>(x.mode||'daily')==='daily' && x.date===yesterday);
+  const yp=ye.reduce((s,e)=>s+(+e.revenue||0)-(+e.expenses||0),0);
+  const dayCmp=changeText(p,yp);
+  $('todayCompare').innerHTML='vs yesterday · <span class="'+dayCmp.cls+'">'+dayCmp.text+'</span>';
+  const recent=[...entries].sort((a,b)=>((entryDate(b)||'')+(b.id||'')).localeCompare((entryDate(a)||'')+(a.id||''))).slice(0,10);
+  $('history').innerHTML=recent.length?recent.map(e=>{const p=(+e.revenue||0)-(+e.expenses||0);const isMonthly=e.mode==='monthly';const label=isMonthly?new Date((e.month||'')+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}):(e.date===t?'Today':shortDate(e.date));return `<div class="item"><div class="item-left"><strong>${label}</strong><span>${money(e.revenue)} revenue · ${money(e.expenses)} expenses</span>${isMonthly?'<span class="tag">Monthly</span>':''}${e.title?`<span class="tag">${escapeHtml(e.title)}</span>`:''}</div><div class="item-right"><strong class="${p>0?'positive':p<0?'negative':''}">${money(p)}</strong><button class="delete" onclick="removeEntry('${e.id}')">Delete</button></div></div>`}).join(''):'<div class="empty">No profit entries yet.</div>';
+  drawChart();
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))} function removeEntry(id){if(!confirm('Delete this entry?'))return;entries=entries.filter(x=>x.id!==id);localStorage.setItem(STORE,JSON.stringify(entries));refresh()}
+$('save').onclick=()=>{const revenue=+$('revenue').value||0,expenses=+$('expenses').value||0,title=$('title').value.trim();if(!revenue&&!expenses)return;const id=String(Date.now())+Math.random().toString(36).slice(2,7);if(entryMode==='monthly'){const month=$('monthInput').value;if(!month)return;entries.push({id,mode:'monthly',month,revenue,expenses,title})}else{entries.push({id,mode:'daily',date:today(),revenue,expenses,title})}localStorage.setItem(STORE,JSON.stringify(entries));$('revenue').value='';$('expenses').value='';$('title').value='';refresh()}
+document.querySelectorAll('.range button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.range button').forEach(x=>x.classList.remove('active'));b.classList.add('active');chartDays=+b.dataset.days;drawChart()})
+
+function setMode(mode){
+  entryMode=mode;
+  $('dailyMode').classList.toggle('active',mode==='daily');
+  $('monthlyMode').classList.toggle('active',mode==='monthly');
+  $('monthWrap').classList.toggle('active',mode==='monthly');
+  $('entryTitle').textContent=mode==='daily'?'Add today':'Add monthly profit';
+  $('save').textContent=mode==='daily'?'Save today':'Save month';
+}
+$('dailyMode').onclick=()=>setMode('daily');
+$('monthlyMode').onclick=()=>setMode('monthly');
+$('monthInput').value=today().slice(0,7);
+
+$('todayLabel').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+window.addEventListener('resize',drawChart);
+refresh();
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('installBtn').style.display='block'});
+$('installBtn').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('installBtn').style.display='none'};
+window.addEventListener('appinstalled',()=>{$('installBtn').style.display='none'});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
