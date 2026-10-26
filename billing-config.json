@@ -1,0 +1,8 @@
+{
+  "plans": {
+    "monthly": {"price": "$2.99", "url": ""},
+    "yearly": {"price": "$24.99", "url": ""},
+    "lifetime": {"price": "$49.99", "url": ""}
+  },
+  "entitlementEndpoint": ""
+}
