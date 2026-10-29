@@ -17,8 +17,8 @@ document.addEventListener('click',async e=>{
     passiveTargetFromExpenses:$('v25ExpenseTarget')?.checked??old.passiveTargetFromExpenses,
     passiveTargetMonthly:Math.max(0,Number($('v25PassiveTarget')?.value??old.passiveTargetMonthly)||0)
   };
-  b.disabled=true;b.textContent='Saving…';
+  b.textContent='Saving…';
   window.__profitV25.saveGoal(g);
-  try{await window.__profitV25.syncNow(true);b.textContent='Saved ✓';setTimeout(()=>{if(document.body.contains(b)){b.disabled=false;b.textContent='Save Freedom Strategy'}},900)}catch{b.disabled=false;b.textContent='Save Freedom Strategy'}
+  try{await window.__profitV25.syncNow(true);if(document.body.contains(b)){b.textContent='Saved ✓';setTimeout(()=>{if(document.body.contains(b))b.textContent='Save Freedom Strategy'},600)}}catch{if(document.body.contains(b))b.textContent='Save Freedom Strategy'}
 },true);
 })();
