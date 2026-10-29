@@ -12,6 +12,7 @@ const ALLOWED=new Set([
 ]);
 const ITER=210000;
 const SESSION_TTL=60*60*24*30;
+const MAX_BODY=1500000;
 
 function cors(req,res){
   const o=req.headers.origin;
@@ -23,7 +24,7 @@ function cors(req,res){
   res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
 }
 function json(res,status,obj){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(obj));}
-function readBody(req){return new Promise((resolve,reject)=>{let s='';req.on('data',d=>{s+=d;if(s.length>16384){reject(new Error('too_large'));req.destroy();}});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch{reject(new Error('bad_json'))}});req.on('error',reject);});}
+function readBody(req){return new Promise((resolve,reject)=>{let s='';req.on('data',d=>{s+=d;if(s.length>MAX_BODY){reject(new Error('too_large'));req.destroy();}});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch{reject(new Error('bad_json'))}});req.on('error',reject);});}
 function normEmail(v){return String(v||'').trim().toLowerCase();}
 function validEmail(v){return /^\S+@\S+\.\S+$/.test(v)&&v.length<=254;}
 function hashPassword(password,saltHex){return crypto.pbkdf2Sync(password,Buffer.from(saltHex,'hex'),ITER,32,'sha256').toString('hex');}
@@ -71,13 +72,35 @@ const server=http.createServer(async(req,res)=>{
       return json(res,200,{user:publicUser(a.user)});
     }
 
+    if(req.method==='GET'&&req.url==='/data'){
+      const a=await authed(req);if(!a)return json(res,401,{error:'Not signed in.'});
+      const raw=await redis.get(`profit:data:${a.user.id}`);
+      if(!raw)return json(res,200,{data:null,updatedAt:0});
+      try{const d=JSON.parse(raw);return json(res,200,{data:d.data||null,updatedAt:Number(d.updatedAt)||0});}
+      catch{return json(res,200,{data:null,updatedAt:0});}
+    }
+
+    if(req.method==='POST'&&req.url==='/data'){
+      const a=await authed(req);if(!a)return json(res,401,{error:'Not signed in.'});
+      const b=await readBody(req);
+      if(!b||typeof b.data!=='object'||Array.isArray(b.data))return json(res,400,{error:'Invalid sync payload.'});
+      const payload={updatedAt:Date.now(),data:b.data};
+      await redis.set(`profit:data:${a.user.id}`,JSON.stringify(payload));
+      return json(res,200,{ok:true,updatedAt:payload.updatedAt});
+    }
+
     if(req.method==='POST'&&req.url==='/logout'){
       const h=String(req.headers.authorization||'');if(h.startsWith('Bearer '))await redis.del(`profit:session:${h.slice(7)}`);
       return json(res,200,{ok:true});
     }
 
     return json(res,404,{error:'Not found.'});
-  }catch(e){console.error(e);return json(res,500,{error:'Server error.'});}
+  }catch(e){
+    console.error(e);
+    if(e&&e.message==='too_large')return json(res,413,{error:'Backup is too large.'});
+    if(e&&e.message==='bad_json')return json(res,400,{error:'Invalid JSON.'});
+    return json(res,500,{error:'Server error.'});
+  }
 });
 
 server.listen(PORT,()=>console.log(`Profit auth API listening on ${PORT}`));
