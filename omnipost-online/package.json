@@ -1,8 +1,8 @@
 {
   "name": "omnipost-online",
-  "version": "6.0.0",
+  "version": "8.1.0",
   "private": true,
-  "description": "Online original-quality social video publisher",
-  "scripts": {"start": "node server-v2.js"},
+  "description": "Online original-quality social video publisher with whole-video local AI",
+  "scripts": {"start": "node server-v8.js"},
   "engines": {"node": ">=18"}
 }
