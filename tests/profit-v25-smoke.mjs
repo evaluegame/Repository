@@ -30,6 +30,7 @@ async function prepare(page, seed=true){
     }
   },seed);
   await page.addScriptTag({path:path.resolve('v25-final.js')});
+  await page.addScriptTag({path:path.resolve('v25-stability.js')});
   await page.waitForFunction(()=>window.__profitV25 && document.getElementById('freedomProgressCard'));
 }
 
