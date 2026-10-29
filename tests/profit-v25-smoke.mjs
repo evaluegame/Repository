@@ -74,9 +74,9 @@ await page.fill('#v25RuleAmount','10');
 await page.fill('#v25RuleName','Test passive');
 await page.click('#v25AddRule');
 await page.waitForFunction(()=>JSON.parse(localStorage.getItem('profitRecurring_v1')||'[]').some(r=>r.name==='Test passive'));
-
-await page.click('#gear');
 await page.waitForSelector('#profitV25Settings.show');
+assert.ok(await page.isVisible('#v25Export'),'Settings closed after adding a rule');
+
 const downloadPromise=page.waitForEvent('download');
 await page.click('#v25Export');
 const download=await downloadPromise;
