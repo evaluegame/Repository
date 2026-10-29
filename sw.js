@@ -1,4 +1,4 @@
-const C='profit-render-v24';
+const C='profit-render-v25';
 const CORE=['./','./index.html','./v21-cloud-auth.js','./v22-cloud-activation.js','./v23-freedom-sync.js','./app-v9.js','./v10-patch.js','./v11-daily-fix.js','./v12-pro.js','./v13-install-roi.js','./v14-active-passive.js','./v19-profit-trend-roi.js','./billing-config.json','./manifest.json','./about.html','./privacy.html','./ads.txt'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(CORE)))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
