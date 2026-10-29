@@ -1,0 +1,8 @@
+{
+  "name": "profit-auth-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {"start": "node server.js"},
+  "dependencies": {"ioredis": "^5.4.1"}
+}
