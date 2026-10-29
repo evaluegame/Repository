@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Freedom Fighter Lens",
-  "version": "0.1.0",
-  "description": "Translate online prices into estimated impact on your financial-independence timeline.",
+  "version": "0.2.0",
+  "description": "Translate online prices into estimated impact on your custom financial-freedom Exit Number and timeline.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "action": {"default_title": "Freedom Fighter Lens", "default_popup": "popup.html"},
