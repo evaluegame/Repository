@@ -33,24 +33,28 @@ jobs:
       - name: Build APK
         working-directory: profit-mobile/android
         run: gradle assembleDebug --stacktrace
-      - name: Rename APK
+      - name: Prepare APK
         run: cp profit-mobile/android/app/build/outputs/apk/debug/app-debug.apk Profit-Android.apk
       - uses: actions/upload-artifact@v4
         with:
           name: Profit-Android-APK
           path: Profit-Android.apk
-      - name: Publish exact APK to Freedom Fighter website
+      - name: Generate exact website APK payload
         run: |
           mkdir -p freedom-fighter-site/downloads
           cp Profit-Android.apk freedom-fighter-site/downloads/Profit-Android.apk
-          echo "Built APK bytes: $(wc -c < Profit-Android.apk)"
-          echo "Published APK bytes: $(wc -c < freedom-fighter-site/downloads/Profit-Android.apk)"
+          B64="$(base64 -w0 Profit-Android.apk)"
+          printf 'window.PROFIT_APK_B64="%s";window.PROFIT_APK_SIZE=%s;\n' "$B64" "$(wc -c < Profit-Android.apk)" > freedom-fighter-site/apk-data.js
+          echo "APK bytes: $(wc -c < Profit-Android.apk)"
+          echo "APK payload chars: $(wc -c < freedom-fighter-site/apk-data.js)"
+      - name: Publish exact APK and payload
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add freedom-fighter-site/downloads/Profit-Android.apk
+          git add freedom-fighter-site/downloads/Profit-Android.apk freedom-fighter-site/apk-data.js
           if git diff --cached --quiet; then
-            echo "Website APK already matches the compiled APK."
+            echo "Website APK payload already matches the compiled APK."
           else
-            git commit -m "Publish exact Profit Android APK [skip ci]"
+            git commit -m "Publish exact Profit Android APK payload [skip ci]"
             git push origin HEAD:main
           fi
