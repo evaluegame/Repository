@@ -32,9 +32,16 @@ jobs:
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Build APK
         working-directory: profit-mobile/android
-        run: gradle assembleDebug --stacktrace
+        run: gradle clean assembleDebug --stacktrace
       - name: Prepare APK
         run: cp profit-mobile/android/app/build/outputs/apk/debug/app-debug.apk Profit-Android.apk
+      - name: Validate APK package, manifest and signatures
+        run: |
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          "$BT/zipalign" -c -v 4 Profit-Android.apk
+          "$BT/aapt2" dump badging Profit-Android.apk
+          "$BT/apksigner" verify --verbose --print-certs Profit-Android.apk
+          echo "Validated APK bytes: $(wc -c < Profit-Android.apk)"
       - uses: actions/upload-artifact@v4
         with:
           name: Profit-Android-APK
@@ -46,15 +53,14 @@ jobs:
           B64="$(base64 -w0 Profit-Android.apk)"
           printf 'window.PROFIT_APK_B64="%s";window.PROFIT_APK_SIZE=%s;\n' "$B64" "$(wc -c < Profit-Android.apk)" > freedom-fighter-site/apk-data.js
           echo "APK bytes: $(wc -c < Profit-Android.apk)"
-          echo "APK payload chars: $(wc -c < freedom-fighter-site/apk-data.js)"
-      - name: Publish exact APK and payload
+      - name: Publish exact validated APK and payload
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add freedom-fighter-site/downloads/Profit-Android.apk freedom-fighter-site/apk-data.js
           if git diff --cached --quiet; then
-            echo "Website APK payload already matches the compiled APK."
+            echo "Website APK already matches the validated APK."
           else
-            git commit -m "Publish exact Profit Android APK payload [skip ci]"
+            git commit -m "Publish validated Profit Android APK [skip ci]"
             git push origin HEAD:main
           fi
