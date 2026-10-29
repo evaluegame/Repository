@@ -1,15 +1,198 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OmniPost — Original Quality Social Publisher</title><style>
-*{box-sizing:border-box}body{margin:0;background:#07090d;color:#f7f8fb;font:15px Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial}button,input,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:240px 1fr}.side{border-right:1px solid #202531;background:#0a0d13;padding:26px 18px;position:sticky;top:0;height:100vh}.brand{display:flex;gap:12px;align-items:center;margin-bottom:34px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#7b7cff,#5ee7c4);display:grid;place-items:center;color:#071019;font-weight:900}.brand b{font-size:18px}.brand small{display:block;color:#7f899b;margin-top:3px}.nav{display:grid;gap:9px}.nav button{border:0;background:transparent;color:#8d96a8;padding:13px 14px;text-align:left;border-radius:12px}.nav button.active{background:#151a24;color:white}.sidebox{position:absolute;bottom:24px;left:18px;right:18px;border:1px solid #242a36;border-radius:14px;padding:14px;background:#0d1118}.dot{width:8px;height:8px;border-radius:50%;background:#5ee7c4;display:inline-block;margin-right:8px}.main{padding:34px;max-width:1450px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.top h1{margin:2px 0 0;font-size:34px}.eyebrow{font-size:11px;letter-spacing:.16em;color:#64e9c6;font-weight:800}.badges{display:flex;gap:8px}.badge{padding:7px 10px;border-radius:999px;border:1px solid #2a3140;color:#aeb7c8;font-size:11px;font-weight:800}.badge.live{color:#63e7be;border-color:#245f50;background:#0b211c}.hero{padding:26px 28px;border:1px solid #232a37;border-radius:22px;background:radial-gradient(circle at 85% 0,#1b2240 0,transparent 34%),linear-gradient(180deg,#111521,#0c1018);margin-bottom:22px}.hero h2{font-size:32px;margin:7px 0 10px;max-width:850px}.hero p{color:#9aa5b7;max-width:900px;line-height:1.6}.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px}.stack{display:grid;gap:18px}.panel{border:1px solid #222936;border-radius:18px;background:#0d1118;padding:20px}.ph{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:16px}.ph h3{margin:0;font-size:17px}.ph p{margin:5px 0 0;color:#788396;font-size:13px}.quality{padding:7px 10px;border-radius:999px;background:#0e261f;border:1px solid #235e4d;color:#69edc2;font-size:11px;font-weight:900}.drop{display:block;border:1px dashed #343d4f;border-radius:16px;padding:28px;text-align:center;background:#0a0e15;cursor:pointer;transition:.2s}.drop:hover,.drop.drag{border-color:#66e9c7;background:#0c1517}.drop input{display:none}.orb{width:52px;height:52px;border-radius:16px;background:#171d29;margin:0 auto 12px;display:grid;place-items:center;font-size:24px;color:#64e9c6}.drop h4{margin:0 0 6px;font-size:18px}.drop p{margin:0;color:#7f8a9d}.preview{display:none;text-align:left}.preview.show{display:block}.preview video{width:100%;max-height:420px;background:black;border-radius:12px;margin-bottom:12px}.fileline{display:flex;justify-content:space-between;gap:15px}.fileline span{display:block;color:#8590a2;font-size:12px;margin-top:4px}.progress{height:6px;background:#202634;border-radius:99px;overflow:hidden;margin-top:14px}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,#7478ff,#5ee7c4)}.proof{display:none;margin-top:12px;padding:11px 12px;border:1px solid #245c4d;background:#0b1e19;border-radius:12px;color:#6debc1}.proof.show{display:flex;justify-content:space-between;gap:12px}.proof small{color:#8fb3a7;overflow:hidden;text-overflow:ellipsis}.fields{display:grid;gap:13px}.field label{display:block;color:#a9b1c0;font-size:12px;margin-bottom:7px}.field input,.field textarea{width:100%;background:#090d14;border:1px solid #283041;color:white;border-radius:12px;padding:13px 14px;outline:none}.field textarea{min-height:140px;resize:vertical}.field input:focus,.field textarea:focus{border-color:#6874ff}.channels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ch{display:flex;align-items:center;gap:10px;border:1px solid #252d3b;border-radius:12px;padding:12px;background:#0a0e15;cursor:pointer}.ch input{accent-color:#63e7be}.ch b{font-size:13px}.buttons{display:grid;gap:10px}.primary,.secondary{border:0;border-radius:13px;padding:14px 16px;font-weight:900;cursor:pointer}.primary{background:linear-gradient(90deg,#7c7dff,#5ee7c4);color:#071016}.secondary{background:#171c27;color:white;border:1px solid #293142}.primary:disabled{opacity:.45;cursor:not-allowed}.summary{display:grid;gap:12px}.sum{display:flex;justify-content:space-between;border-bottom:1px solid #202631;padding-bottom:11px}.sum span{color:#7e899a}.note{color:#768294;font-size:12px;line-height:1.55}.toast{position:fixed;right:24px;bottom:24px;background:#111721;border:1px solid #2c3544;border-radius:14px;padding:14px 16px;max-width:360px;box-shadow:0 16px 50px #0008;display:none}.toast.show{display:block}.queue{display:grid;gap:10px}.job{border:1px solid #252d3a;border-radius:12px;padding:12px}.job b{display:block}.job small{color:#8490a2}.hidden{display:none!important}@media(max-width:950px){.shell{display:block}.side{height:auto;position:static;border-right:0;border-bottom:1px solid #222;padding:16px}.nav,.sidebox{display:none}.main{padding:18px}.grid{grid-template-columns:1fr}.channels{grid-template-columns:repeat(2,1fr)}.hero h2{font-size:26px}}
-</style></head><body><div class="shell"><aside class="side"><div class="brand"><div class="logo">O</div><div><b>OmniPost</b><small>Online Creator Studio</small></div></div><div class="nav"><button class="active">✦ Create</button><button>◷ Queue</button><button>◎ Accounts</button></div><div class="sidebox"><span class="dot"></span><b>Cloud service online</b><small style="display:block;color:#7d899a;margin-top:6px">Original-quality upload pipeline</small></div></aside><main class="main"><div class="top"><div><span class="eyebrow">CREATOR STUDIO</span><h1>Create post</h1></div><div class="badges"><span class="badge" id="mode">DEMO</span><span class="badge live">ORIGINAL QUALITY</span></div></div><section class="hero"><span class="eyebrow">UPLOAD ONCE → PUBLISH EVERYWHERE</span><h2>Your original video goes in. OmniPost does not recompress it.</h2><p>The file is stored byte-for-byte, verified with SHA-256, and delivered from the original upload. Social networks may still transcode after receiving it because their encoding is outside OmniPost's control.</p></section><div class="grid"><div class="stack"><section class="panel"><div class="ph"><div><h3>1. Upload original video</h3><p>Choose or drag your source video.</p></div><span class="quality">NO RECOMPRESSION</span></div><label class="drop" id="drop"><input id="file" type="file" accept="video/*"><div id="empty"><div class="orb">↑</div><h4>Choose or drop your video</h4><p>Exact source bytes are preserved before publishing.</p></div><div class="preview" id="preview"><video id="vid" controls muted></video><div class="fileline"><div><b id="fn"></b><span id="fm"></span></div><b id="pct">0%</b></div><div class="progress"><i id="bar"></i></div><div class="proof" id="proof"><b>✓ ORIGINAL BYTES PRESERVED</b><small id="sha"></small></div></div></label></section><section class="panel"><div class="ph"><div><h3>2. Auto-Fill post</h3><p>Free automatic draft, then edit anything you want.</p></div><button class="secondary" id="regen">Generate again</button></div><div class="fields"><div class="field"><label>Title</label><input id="title" maxlength="150"></div><div class="field"><label>Description / caption</label><textarea id="caption" maxlength="5000"></textarea></div><div class="field"><label>Hashtags</label><input id="tags"></div></div></section><section class="panel"><div class="ph"><div><h3>3. Destinations</h3><p>Select where the original upload should be published.</p></div><button class="secondary" id="all">Select all</button></div><div class="channels" id="channels"></div></section></div><aside class="stack"><section class="panel"><div class="ph"><div><h3>Publish center</h3><p>One upload, many channels.</p></div></div><div class="summary"><div class="sum"><span>Video</span><b id="sVideo">Waiting</b></div><div class="sum"><span>Channels</span><b id="sChannels">0</b></div><div class="sum"><span>Quality</span><b>Original</b></div><div class="sum"><span>Mode</span><b id="sMode">Demo</b></div></div><div class="buttons" style="margin-top:18px"><button class="primary" id="publish" disabled>Publish Everywhere →</button><button class="secondary" id="refresh">Refresh</button></div><p class="note" id="liveNote"></p></section><section class="panel"><div class="ph"><div><h3>Recent jobs</h3><p>Latest publishing attempts.</p></div></div><div class="queue" id="jobs"><span class="note">No jobs yet.</span></div></section></aside></div></main></div><div class="toast" id="toast"></div><script>
-const $=s=>document.querySelector(s);let upload=null,selected=new Set(),plist=[],mode='demo';
-function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OmniPost — Real AI Social Video Publisher</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#07090d;color:#f7f8fb;font:15px Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial}
+button,input,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:240px 1fr}.side{border-right:1px solid #202531;background:#0a0d13;padding:26px 18px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:34px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#7b7cff,#5ee7c4);display:grid;place-items:center;color:#071019;font-weight:900}
+.brand b{font-size:18px}.brand small{display:block;color:#7f899b;margin-top:3px}.nav{display:grid;gap:9px}.nav button{border:0;background:transparent;color:#8d96a8;padding:13px 14px;text-align:left;border-radius:12px}.nav button.active{background:#151a24;color:white}
+.sidebox{position:absolute;bottom:24px;left:18px;right:18px;border:1px solid #242a36;border-radius:14px;padding:14px;background:#0d1118}.dot{width:8px;height:8px;border-radius:50%;background:#5ee7c4;display:inline-block;margin-right:8px}
+.main{padding:34px;max-width:1450px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.top h1{margin:2px 0 0;font-size:34px}.eyebrow{font-size:11px;letter-spacing:.16em;color:#64e9c6;font-weight:800}
+.badges{display:flex;gap:8px;flex-wrap:wrap}.badge{padding:7px 10px;border-radius:999px;border:1px solid #2a3140;color:#aeb7c8;font-size:11px;font-weight:800}.badge.live{color:#63e7be;border-color:#245f50;background:#0b211c}.badge.ai{color:#b9baff;border-color:#5557aa;background:#14152b}
+.hero{padding:26px 28px;border:1px solid #232a37;border-radius:22px;background:radial-gradient(circle at 85% 0,#1b2240 0,transparent 34%),linear-gradient(180deg,#111521,#0c1018);margin-bottom:22px}.hero h2{font-size:32px;margin:7px 0 10px;max-width:900px}.hero p{color:#9aa5b7;max-width:950px;line-height:1.6}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px}.stack{display:grid;gap:18px}.panel{border:1px solid #222936;border-radius:18px;background:#0d1118;padding:20px}.ph{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:16px}.ph h3{margin:0;font-size:17px}.ph p{margin:5px 0 0;color:#788396;font-size:13px}
+.quality{padding:7px 10px;border-radius:999px;background:#0e261f;border:1px solid #235e4d;color:#69edc2;font-size:11px;font-weight:900}.drop{display:block;border:1px dashed #343d4f;border-radius:16px;padding:28px;text-align:center;background:#0a0e15;cursor:pointer;transition:.2s}.drop:hover,.drop.drag{border-color:#66e9c7;background:#0c1517}.drop input{display:none}
+.orb{width:52px;height:52px;border-radius:16px;background:#171d29;margin:0 auto 12px;display:grid;place-items:center;font-size:24px;color:#64e9c6}.drop h4{margin:0 0 6px;font-size:18px}.drop p{margin:0;color:#7f8a9d}.preview{display:none;text-align:left}.preview.show{display:block}.preview video{width:100%;max-height:420px;background:black;border-radius:12px;margin-bottom:12px}.fileline{display:flex;justify-content:space-between;gap:15px}.fileline span{display:block;color:#8590a2;font-size:12px;margin-top:4px}
+.progress{height:6px;background:#202634;border-radius:99px;overflow:hidden;margin-top:14px}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,#7478ff,#5ee7c4)}.proof{display:none;margin-top:12px;padding:11px 12px;border:1px solid #245c4d;background:#0b1e19;border-radius:12px;color:#6debc1}.proof.show{display:flex;justify-content:space-between;gap:12px}.proof small{color:#8fb3a7;overflow:hidden;text-overflow:ellipsis}
+.fields{display:grid;gap:13px}.field label{display:block;color:#a9b1c0;font-size:12px;margin-bottom:7px}.field input,.field textarea{width:100%;background:#090d14;border:1px solid #283041;color:white;border-radius:12px;padding:13px 14px;outline:none}.field textarea{min-height:140px;resize:vertical}.field input:focus,.field textarea:focus{border-color:#6874ff}
+.aiStatus{border:1px solid #30394b;background:#0a0f18;border-radius:14px;padding:13px 14px;margin-bottom:14px}.aiLine{display:flex;gap:10px;align-items:center}.spinner{width:16px;height:16px;border:2px solid #303a4d;border-top-color:#7c7dff;border-radius:50%;animation:spin .8s linear infinite;display:none}.spinner.show{display:block}@keyframes spin{to{transform:rotate(360deg)}}.aiStatus b{font-size:13px}.aiStatus p{margin:5px 0 0;color:#8290a4;font-size:12px;line-height:1.45}.observations{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #252d3a}.observations.show{display:block}.observations span{display:block;color:#aeb7c8;font-size:12px;margin-top:5px}
+.channels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ch{display:flex;align-items:center;gap:10px;border:1px solid #252d3b;border-radius:12px;padding:12px;background:#0a0e15;cursor:pointer}.ch input{accent-color:#63e7be}.ch b{font-size:13px}
+.buttons{display:grid;gap:10px}.primary,.secondary{border:0;border-radius:13px;padding:14px 16px;font-weight:900;cursor:pointer}.primary{background:linear-gradient(90deg,#7c7dff,#5ee7c4);color:#071016}.secondary{background:#171c27;color:white;border:1px solid #293142}.primary:disabled,.secondary:disabled{opacity:.45;cursor:not-allowed}
+.summary{display:grid;gap:12px}.sum{display:flex;justify-content:space-between;border-bottom:1px solid #202631;padding-bottom:11px}.sum span{color:#7e899a}.note{color:#768294;font-size:12px;line-height:1.55}.toast{position:fixed;right:24px;bottom:24px;background:#111721;border:1px solid #2c3544;border-radius:14px;padding:14px 16px;max-width:390px;box-shadow:0 16px 50px #0008;display:none;z-index:10}.toast.show{display:block}.queue{display:grid;gap:10px}.job{border:1px solid #252d3a;border-radius:12px;padding:12px}.job b{display:block}.job small{color:#8490a2}.hidden{display:none!important}
+@media(max-width:950px){.shell{display:block}.side{height:auto;position:static;border-right:0;border-bottom:1px solid #222;padding:16px}.nav,.sidebox{display:none}.main{padding:18px}.grid{grid-template-columns:1fr}.channels{grid-template-columns:repeat(2,1fr)}.hero h2{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="side">
+<div class="brand"><div class="logo">O</div><div><b>OmniPost</b><small>Online Creator Studio</small></div></div>
+<div class="nav"><button class="active">✦ Create</button><button>◷ Queue</button><button>◎ Accounts</button></div>
+<div class="sidebox"><span class="dot"></span><b>Cloud service online</b><small style="display:block;color:#7d899a;margin-top:6px">Original-quality + browser AI</small></div>
+</aside>
+<main class="main">
+<div class="top"><div><span class="eyebrow">CREATOR STUDIO</span><h1>Create post</h1></div><div class="badges"><span class="badge" id="mode">DEMO</span><span class="badge live">ORIGINAL QUALITY</span><span class="badge ai" id="aiBadge">REAL AI</span></div></div>
+<section class="hero"><span class="eyebrow">UPLOAD ONCE → AI ANALYZE → PUBLISH</span><h2>Your original video stays untouched. AI analyzes sampled frames separately.</h2><p>OmniPost stores the exact source bytes and verifies them with SHA-256. For Auto-Fill, the browser makes small temporary frame images only for AI analysis; those do not replace or modify your original video.</p></section>
+<div class="grid"><div class="stack">
+<section class="panel"><div class="ph"><div><h3>1. Upload original video</h3><p>Choose or drag your source video.</p></div><span class="quality">NO RECOMPRESSION</span></div>
+<label class="drop" id="drop"><input id="file" type="file" accept="video/*"><div id="empty"><div class="orb">↑</div><h4>Choose or drop your video</h4><p>Exact source bytes are preserved before publishing.</p></div>
+<div class="preview" id="preview"><video id="vid" controls muted></video><div class="fileline"><div><b id="fn"></b><span id="fm"></span></div><b id="pct">0%</b></div><div class="progress"><i id="bar"></i></div><div class="proof" id="proof"><b>✓ ORIGINAL BYTES PRESERVED</b><small id="sha"></small></div></div></label>
+</section>
+
+<section class="panel">
+<div class="ph"><div><h3>2. Real AI Auto-Fill</h3><p>Visual AI reads actual frames from your video — not the filename.</p></div><button class="secondary" id="regen" disabled>Analyze again</button></div>
+<div class="aiStatus"><div class="aiLine"><span class="spinner" id="spin"></span><b id="aiTitle">Upload a video to start AI analysis</b></div><p id="aiText">The first analysis may download the free AI model to your browser cache. Future runs should reuse it.</p><div class="observations" id="obs"></div></div>
+<div class="fields"><div class="field"><label>AI title</label><input id="title" maxlength="150" placeholder="AI will generate this from the video"></div>
+<div class="field"><label>AI description / caption</label><textarea id="caption" maxlength="5000" placeholder="AI will generate this from the video"></textarea></div>
+<div class="field"><label>AI hashtags</label><input id="tags" placeholder="AI will generate hashtags from detected content"></div></div>
+</section>
+
+<section class="panel"><div class="ph"><div><h3>3. Destinations</h3><p>Select where the original upload should be published.</p></div><button class="secondary" id="all">Select all</button></div><div class="channels" id="channels"></div></section>
+</div>
+
+<aside class="stack">
+<section class="panel"><div class="ph"><div><h3>Publish center</h3><p>One original video, many channels.</p></div></div>
+<div class="summary"><div class="sum"><span>Video</span><b id="sVideo">Waiting</b></div><div class="sum"><span>AI</span><b id="sAI">Waiting</b></div><div class="sum"><span>Channels</span><b id="sChannels">0</b></div><div class="sum"><span>Quality</span><b>Original</b></div><div class="sum"><span>Mode</span><b id="sMode">Demo</b></div></div>
+<div class="buttons" style="margin-top:18px"><button class="primary" id="publish" disabled>Publish Everywhere →</button><button class="secondary" id="refresh">Refresh</button></div><p class="note" id="liveNote"></p>
+</section>
+<section class="panel"><div class="ph"><div><h3>Recent jobs</h3><p>Latest publishing attempts.</p></div></div><div class="queue" id="jobs"><span class="note">No jobs yet.</span></div></section>
+</aside></div>
+</main></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+const $=s=>document.querySelector(s);
+let upload=null, selected=new Set(), plist=[], mode='demo', currentFile=null, captioner=null, aiReady=false, aiBusy=false;
+
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),4200)}
 function fmt(n){return n>1073741824?(n/1073741824).toFixed(2)+' GB':n>1048576?(n/1048576).toFixed(1)+' MB':(n/1024).toFixed(1)+' KB'}
 async function api(u,o){const r=await fetch(u,o);const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d}
+
 function renderChannels(){const box=$('#channels');box.innerHTML=plist.map(p=>'<label class="ch"><input type="checkbox" value="'+p.id+'" '+(selected.has(p.id)?'checked':'')+'><b>'+p.name+'</b></label>').join('');box.querySelectorAll('input').forEach(x=>x.onchange=()=>{x.checked?selected.add(x.value):selected.delete(x.value);summary()})}
-function summary(){$('#sVideo').textContent=upload?'Ready':'Waiting';$('#sChannels').textContent=selected.size;$('#publish').disabled=!upload||!selected.size}
-function fill(name){const b=name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();const title=(b||'New Video').replace(/\b\w/g,m=>m.toUpperCase()).slice(0,150);const tags=[...new Set((title.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(x=>x.length>2).slice(0,6).map(x=>'#'+x)),'#video','#creator'];$('#title').value=title;$('#caption').value=title+'\n\nWatch the full video and tell me what you think.\n\n'+tags.join(' ');$('#tags').value=tags.join(' ')}
-async function load(){const h=await api('/api/health');mode=h.mode;plist=h.platforms;selected=new Set(plist.map(x=>x.id));$('#mode').textContent=mode==='live'?'LIVE':'DEMO';if(mode==='live')$('#mode').classList.add('live');$('#sMode').textContent=mode==='live'?'Live':'Demo';$('#liveNote').textContent=mode==='live'?'Live mode is enabled. Selected posts can be sent to connected social accounts.':'Demo mode is safe: nothing is posted publicly until a server-side publishing API key is connected.';renderChannels();const st=await api('/api/state');renderJobs(st.jobs);summary()}
+function summary(){ $('#sVideo').textContent=upload?'Ready':'Waiting'; $('#sChannels').textContent=selected.size; $('#publish').disabled=!upload||!selected.size||!($('#title').value.trim()||$('#caption').value.trim()) }
+
+function setAI(state,title,text){
+  $('#aiTitle').textContent=title; $('#aiText').textContent=text||'';
+  $('#spin').classList.toggle('show',state==='busy');
+  $('#sAI').textContent=state==='ok'?'Ready':state==='busy'?'Analyzing':state==='error'?'Error':'Waiting';
+  $('#aiBadge').textContent=state==='ok'?'AI ANALYZED':state==='busy'?'AI WORKING':'REAL AI';
+}
+
 function renderJobs(j){$('#jobs').innerHTML=j.length?j.slice(0,5).map(x=>'<div class="job"><b>'+(x.title||'Untitled')+'</b><small>'+x.status+' · '+x.platforms.join(', ')+'</small></div>').join(''):'<span class="note">No jobs yet.</span>'}
-function uploadFile(file){if(!file||!file.type.startsWith('video/'))return toast('Choose a video file');$('#empty').classList.add('hidden');$('#preview').classList.add('show');$('#vid').src=URL.createObjectURL(file);$('#fn').textContent=file.name;$('#fm').textContent=fmt(file.size)+' · original source';$('#bar').style.width='2%';$('#pct').textContent='2%';fill(file.name);const x=new XMLHttpRequest();x.open('POST','/api/upload');x.setRequestHeader('Content-Type',file.type||'video/mp4');x.setRequestHeader('X-Filename',file.name);x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.min(99,Math.round(e.loaded/e.total*100));$('#bar').style.width=p+'%';$('#pct').textContent=p+'%'}};x.onload=()=>{let d={};try{d=JSON.parse(x.responseText)}catch{}if(x.status<200||x.status>=300)return toast(d.error||'Upload failed');upload=d.upload;$('#bar').style.width='100%';$('#pct').textContent='100%';$('#proof').classList.add('show');$('#sha').textContent='SHA-256 '+upload.sha256.slice(0,18)+'…';summary();toast('Original video uploaded without recompression')};x.onerror=()=>toast('Upload connection failed');x.send(file)}
-$('#file').onchange=e=>uploadFile(e.target.files[0]);const d=$('#drop');['dragover','dragenter'].forEach(v=>d.addEventListener(v,e=>{e.preventDefault();d.classList.add('drag')}));['dragleave','drop'].forEach(v=>d.addEventListener(v,e=>{e.preventDefault();d.classList.remove('drag')}));d.addEventListener('drop',e=>uploadFile(e.dataTransfer.files[0]));$('#regen').onclick=()=>upload?fill(upload.name):toast('Upload a video first');$('#all').onclick=()=>{selected=new Set(plist.map(x=>x.id));renderChannels();summary()};$('#refresh').onclick=load;$('#publish').onclick=async()=>{try{const d=await api('/api/publish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({uploadId:upload.id,platforms:[...selected],title:$('#title').value,caption:$('#caption').value})});toast(d.mode==='live'?'Sent to connected channels':'Demo publish completed');const st=await api('/api/state');renderJobs(st.jobs)}catch(e){toast(e.message)}};load().catch(e=>toast(e.message));
-</script></body></html>
+
+async function load(){
+  const h=await api('/api/health'); mode=h.mode; plist=h.platforms; selected=new Set(plist.map(x=>x.id));
+  $('#mode').textContent=mode==='live'?'LIVE':'DEMO'; if(mode==='live')$('#mode').classList.add('live');
+  $('#sMode').textContent=mode==='live'?'Live':'Demo';
+  $('#liveNote').textContent=mode==='live'?'Live mode is enabled. Selected posts can be sent to connected social accounts.':'Demo mode is safe: nothing is posted publicly until the publishing API is connected.';
+  renderChannels(); const st=await api('/api/state'); renderJobs(st.jobs); summary();
+}
+
+async function getCaptioner(){
+  if(captioner)return captioner;
+  setAI('busy','Loading free vision AI…','Downloading the vision model in your browser. This happens mainly on first use.');
+  const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+  captioner=await mod.pipeline('image-to-text','Xenova/vit-gpt2-image-captioning',{
+    progress_callback:p=>{
+      if(p&&typeof p.progress==='number') $('#aiText').textContent='Loading AI model… '+Math.round(p.progress)+'%';
+      else if(p&&p.status) $('#aiText').textContent='Loading AI model… '+p.status;
+    }
+  });
+  return captioner;
+}
+
+function seek(video,time){
+  return new Promise((resolve,reject)=>{
+    const done=()=>{cleanup();resolve()}; const bad=()=>{cleanup();reject(new Error('Could not read video frame'))};
+    const cleanup=()=>{video.removeEventListener('seeked',done);video.removeEventListener('error',bad)};
+    video.addEventListener('seeked',done,{once:true});video.addEventListener('error',bad,{once:true});video.currentTime=Math.min(Math.max(time,0),Math.max(0,video.duration-.05));
+  });
+}
+async function capture(video,time){
+  await seek(video,time);
+  const max=640,scale=Math.min(1,max/Math.max(video.videoWidth||1,video.videoHeight||1));
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(video.videoWidth*scale));c.height=Math.max(1,Math.round(video.videoHeight*scale));
+  c.getContext('2d',{alpha:false}).drawImage(video,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',0.82);
+}
+function waitMetadata(video){return new Promise((resolve,reject)=>{if(video.readyState>=1&&Number.isFinite(video.duration))return resolve();video.addEventListener('loadedmetadata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Browser could not decode video for AI analysis')),{once:true})})}
+
+const STOP=new Set('a an the and or of to in on at with for from is are was were be being been this that these those video image photo picture person people man woman boy girl someone something showing shows seen looking look there here their his her its into over under near next front background clip frame'.split(' '));
+function cleanCaption(s){
+  return String(s||'').replace(/^(a|an)\s+(photo|picture|image)\s+of\s+/i,'').replace(/^there (is|are)\s+/i,'').replace(/\s+/g,' ').replace(/[.]+$/,'').trim();
+}
+function titleCase(s){return s.replace(/\b\w/g,c=>c.toUpperCase())}
+function keywords(text){
+  const words=(text.toLowerCase().match(/[a-z][a-z0-9'-]{2,}/g)||[]).filter(w=>!STOP.has(w)&&! /^\d+$/.test(w));
+  const count={};for(const w of words)count[w]=(count[w]||0)+1;
+  return Object.entries(count).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,8);
+}
+function makeDraft(caps){
+  const unique=[...new Set(caps.map(cleanCaption).filter(Boolean))];
+  const best=unique.sort((a,b)=>b.length-a.length)[0]||'Interesting video';
+  let title=titleCase(best.replace(/\b(is|are|was|were)\b.*$/i,'').trim());
+  if(title.length<18)title=titleCase(best); if(title.length>90)title=title.slice(0,87).replace(/\s+\S*$/,'')+'…';
+  const joined=unique.slice(0,3).map((x,i)=>i===0?x:x.charAt(0).toLowerCase()+x.slice(1));
+  const description='In this video, '+joined.join('; ')+'.\n\nWatch the full video for the complete moment.';
+  const keys=keywords(unique.join(' '));
+  const tags=[...new Set(keys.map(x=>'#'+x.replace(/[^a-z0-9]/g,''))),'#video'].filter(x=>x.length>1).slice(0,10);
+  return {title,description,hashtags:tags};
+}
+
+async function analyzeVideo(file){
+  if(aiBusy||!file)return; aiBusy=true; $('#regen').disabled=true; $('#obs').classList.remove('show'); $('#obs').innerHTML='';
+  try{
+    const model=await getCaptioner();
+    setAI('busy','Analyzing actual video frames…','Sampling three points from your video. Your original uploaded file is not modified.');
+    const temp=document.createElement('video'); temp.preload='auto'; temp.muted=true; temp.playsInline=true; temp.src=URL.createObjectURL(file); await waitMetadata(temp);
+    const dur=Number.isFinite(temp.duration)&&temp.duration>0?temp.duration:1;
+    const times=dur<3?[dur*.5]:[dur*.12,dur*.5,dur*.86];
+    const caps=[];
+    for(let i=0;i<times.length;i++){
+      $('#aiText').textContent='AI analyzing frame '+(i+1)+' of '+times.length+'…';
+      const img=await capture(temp,times[i]);
+      const out=await model(img,{max_new_tokens:48});
+      const text=Array.isArray(out)?(out[0]?.generated_text||out[0]?.caption||''):(out?.generated_text||'');
+      if(text)caps.push(text);
+    }
+    URL.revokeObjectURL(temp.src);
+    if(!caps.length)throw new Error('AI could not identify visual content in this video');
+    const draft=makeDraft(caps);
+    $('#title').value=draft.title; $('#caption').value=draft.description+'\n\n'+draft.hashtags.join(' '); $('#tags').value=draft.hashtags.join(' ');
+    $('#obs').innerHTML='<b style="font-size:12px;color:#7f8da2">AI VISUAL OBSERVATIONS</b>'+caps.map((c,i)=>'<span>Frame '+(i+1)+': '+cleanCaption(c)+'</span>').join('');
+    $('#obs').classList.add('show');
+    aiReady=true; setAI('ok','Real AI analysis complete','Generated from '+caps.length+' sampled video frame'+(caps.length===1?'':'s')+'. You can edit everything before publishing.');
+    toast('AI analyzed the actual video and generated your post');
+  }catch(e){
+    console.error(e);aiReady=false;setAI('error','AI analysis could not run',e.message+'. No fake filename-based title was generated. Click Analyze again to retry.');
+    toast('AI error: '+e.message);
+  }finally{aiBusy=false;$('#regen').disabled=!currentFile;summary()}
+}
+
+function uploadFile(file){
+  if(!file||!file.type.startsWith('video/'))return toast('Choose a video file');
+  currentFile=file;upload=null;aiReady=false;$('#title').value='';$('#caption').value='';$('#tags').value='';summary();
+  $('#empty').classList.add('hidden');$('#preview').classList.add('show');$('#vid').src=URL.createObjectURL(file);$('#fn').textContent=file.name;$('#fm').textContent=fmt(file.size)+' · original source';$('#bar').style.width='2%';$('#pct').textContent='2%';$('#proof').classList.remove('show');
+  setAI('busy','Uploading first…','Real AI analysis starts automatically after the original file is safely uploaded.');
+  const x=new XMLHttpRequest();x.open('POST','/api/upload');x.setRequestHeader('Content-Type',file.type||'video/mp4');x.setRequestHeader('X-Filename',encodeURIComponent(file.name));
+  x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.min(99,Math.round(e.loaded/e.total*100));$('#bar').style.width=p+'%';$('#pct').textContent=p+'%'}};
+  x.onload=()=>{let d={};try{d=JSON.parse(x.responseText)}catch{}if(x.status<200||x.status>=300){setAI('error','Upload failed','AI did not start because the upload failed.');return toast(d.error||'Upload failed')}
+    upload=d.upload;$('#bar').style.width='100%';$('#pct').textContent='100%';$('#proof').classList.add('show');$('#sha').textContent='SHA-256 '+upload.sha256.slice(0,18)+'…';summary();toast('Original video preserved exactly');analyzeVideo(file)};
+  x.onerror=()=>{setAI('error','Upload connection failed','Try uploading again.');toast('Upload connection failed')};x.send(file);
+}
+
+$('#file').onchange=e=>uploadFile(e.target.files[0]);const d=$('#drop');
+['dragover','dragenter'].forEach(v=>d.addEventListener(v,e=>{e.preventDefault();d.classList.add('drag')}));
+['dragleave','drop'].forEach(v=>d.addEventListener(v,e=>{e.preventDefault();d.classList.remove('drag')}));
+d.addEventListener('drop',e=>uploadFile(e.dataTransfer.files[0]));
+$('#regen').onclick=()=>analyzeVideo(currentFile);
+$('#all').onclick=()=>{selected=new Set(plist.map(x=>x.id));renderChannels();summary()};
+$('#refresh').onclick=load;
+['input','change'].forEach(ev=>{$('#title').addEventListener(ev,summary);$('#caption').addEventListener(ev,summary)});
+$('#publish').onclick=async()=>{try{const d=await api('/api/publish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({uploadId:upload.id,platforms:[...selected],title:$('#title').value,caption:$('#caption').value})});toast(d.mode==='live'?'Sent to connected channels':'Demo publish completed');const st=await api('/api/state');renderJobs(st.jobs)}catch(e){toast(e.message)}};
+load().catch(e=>toast(e.message));
+</script>
+</body>
+</html>
