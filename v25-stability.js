@@ -8,6 +8,7 @@ const writeRules=a=>localStorage.setItem('profitRecurring_v1',JSON.stringify(a))
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 function refreshSettings(){window.__profitV25?.openSettings?.('')}
 function reloadAfterClose(){if(settingsDirty)setTimeout(()=>location.reload(),70)}
+async function upload(){try{await window.__profitV25.pushLocal(true)}catch{}}
 document.addEventListener('click',async e=>{
   if(!window.__profitV25)return;
   const b=e.target.closest('#v25SaveFreedom');
@@ -27,7 +28,8 @@ document.addEventListener('click',async e=>{
     };
     b.textContent='Saving…';
     window.__profitV25.saveGoal(g);
-    try{await window.__profitV25.syncNow(true);if(document.body.contains(b)){b.textContent='Saved ✓';setTimeout(()=>{if(document.body.contains(b))b.textContent='Save Freedom Strategy'},600)}}catch{if(document.body.contains(b))b.textContent='Save Freedom Strategy'}
+    await upload();
+    if(document.body.contains(b)){b.textContent='Saved ✓';setTimeout(()=>{if(document.body.contains(b))b.textContent='Save Freedom Strategy'},600)}
     return;
   }
   const add=e.target.closest('#v25AddRule');
@@ -35,12 +37,12 @@ document.addEventListener('click',async e=>{
     e.preventDefault();e.stopImmediatePropagation();
     const amount=Math.max(0,Number($('v25RuleAmount')?.value)||0),start=$('v25RuleStart')?.value||today(),end=$('v25RuleEnd')?.value||'';
     if(!amount){$('v25RuleAmount')?.focus();return}if(end&&end<start){$('v25RuleEnd')?.focus();return}
-    const a=readRules();a.push({id:'r'+Date.now(),type:$('v25RuleType')?.value||'active',frequency:$('v25RuleFreq')?.value||'daily',amount,name:$('v25RuleName')?.value?.trim()||'',enabled:true,startDate:start,endDate:end});writeRules(a);settingsDirty=true;await window.__profitV25.syncNow(true);refreshSettings();return;
+    const a=readRules();a.push({id:'r'+Date.now(),type:$('v25RuleType')?.value||'active',frequency:$('v25RuleFreq')?.value||'daily',amount,name:$('v25RuleName')?.value?.trim()||'',enabled:true,startDate:start,endDate:end});writeRules(a);settingsDirty=true;await upload();refreshSettings();return;
   }
   const tog=e.target.closest('[data-v25-toggle]');
-  if(tog){e.preventDefault();e.stopImmediatePropagation();const id=tog.dataset.v25Toggle,a=readRules(),r=a.find(x=>String(x.id)===id);if(r)r.enabled=r.enabled===false;writeRules(a);settingsDirty=true;await window.__profitV25.syncNow(true);refreshSettings();return}
+  if(tog){e.preventDefault();e.stopImmediatePropagation();const id=tog.dataset.v25Toggle,a=readRules(),r=a.find(x=>String(x.id)===id);if(r)r.enabled=r.enabled===false;writeRules(a);settingsDirty=true;await upload();refreshSettings();return}
   const del=e.target.closest('[data-v25-delete]');
-  if(del){e.preventDefault();e.stopImmediatePropagation();const id=del.dataset.v25Delete;writeRules(readRules().filter(x=>String(x.id)!==id));settingsDirty=true;await window.__profitV25.syncNow(true);refreshSettings();return}
+  if(del){e.preventDefault();e.stopImmediatePropagation();const id=del.dataset.v25Delete;writeRules(readRules().filter(x=>String(x.id)!==id));settingsDirty=true;await upload();refreshSettings();return}
   const close=e.target.closest('#v25Close');
   if(close){reloadAfterClose();return}
   if(e.target?.id==='profitV25Settings')reloadAfterClose();
