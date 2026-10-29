@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'v25-final.js'
+      - 'v25-stability.js'
       - 'tests/profit-v25-smoke.mjs'
       - 'index.html'
       - 'sw.js'
@@ -19,7 +20,7 @@ jobs:
         with:
           node-version: '22'
       - name: Check Profit JavaScript syntax
-        run: node --check v25-final.js && node --check tests/profit-v25-smoke.mjs
+        run: node --check v25-final.js && node --check v25-stability.js && node --check tests/profit-v25-smoke.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright
