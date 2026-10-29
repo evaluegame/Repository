@@ -1,6 +1,7 @@
 (()=>{'use strict';
 if(window.__profitV25Stable)return;window.__profitV25Stable=true;
 const $=id=>document.getElementById(id);
+const st=document.createElement('style');st.textContent='#v25Toast,#toast,.toast,.pro-toast{pointer-events:none!important}';document.head.appendChild(st);
 document.addEventListener('click',async e=>{
   const b=e.target.closest('#v25SaveFreedom');
   if(!b||!window.__profitV25)return;
