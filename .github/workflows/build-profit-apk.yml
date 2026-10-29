@@ -55,6 +55,15 @@ jobs:
           echo "APK bytes: $(wc -c < Profit-Android.apk)"
       - name: Publish exact validated APK and payload
         run: |
+          mkdir -p /tmp/profit-apk-publish
+          cp freedom-fighter-site/downloads/Profit-Android.apk /tmp/profit-apk-publish/Profit-Android.apk
+          cp freedom-fighter-site/apk-data.js /tmp/profit-apk-publish/apk-data.js
+          git reset --hard HEAD
+          git fetch origin main
+          git rebase origin/main
+          mkdir -p freedom-fighter-site/downloads
+          cp /tmp/profit-apk-publish/Profit-Android.apk freedom-fighter-site/downloads/Profit-Android.apk
+          cp /tmp/profit-apk-publish/apk-data.js freedom-fighter-site/apk-data.js
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add freedom-fighter-site/downloads/Profit-Android.apk freedom-fighter-site/apk-data.js
