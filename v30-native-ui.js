@@ -1,5 +1,6 @@
 (()=>{'use strict';
-function isNative(){return window.__PROFIT_NATIVE_APP__===true||typeof window.AndroidProfit!=='undefined'||/\bProfitNative\//.test(navigator.userAgent||'')}
+function isAndroidWebView(){const ua=navigator.userAgent||'';return /Android/i.test(ua)&&(/;\s*wv\)/i.test(ua)||/\bVersion\/4\.0\b/i.test(ua))}
+function isNative(){return window.__PROFIT_NATIVE_APP__===true||typeof window.AndroidProfit!=='undefined'||/\bProfitNative\//.test(navigator.userAgent||'')||isAndroidWebView()}
 function apply(){if(!isNative())return false;window.__PROFIT_NATIVE_APP__=true;document.documentElement.classList.add('profit-native');if(!document.getElementById('profitNativeStyle')){const s=document.createElement('style');s.id='profitNativeStyle';s.textContent='html.profit-native #installBtn,html.profit-native #installTop,html.profit-native .install,html.profit-native [data-install-app]{display:none!important}html.profit-native,html.profit-native body{width:100%;min-height:100%;margin:0!important;padding:0!important;overscroll-behavior:none;background:#f6f6f4}html.profit-native body{min-height:100vh;min-height:100dvh}';document.head.appendChild(s)}return true}
 apply();window.addEventListener('pageshow',apply);document.addEventListener('visibilitychange',()=>{if(!document.hidden)apply()});window.__profitNativeUI={isNative,apply};
 })();
