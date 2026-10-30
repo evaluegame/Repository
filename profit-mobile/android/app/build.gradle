@@ -6,6 +6,11 @@ android {
 
     signingConfigs {
         debug {
+            def ks = System.getenv('PROFIT_KEYSTORE')
+            if (ks) storeFile file(ks)
+            storePassword 'android'
+            keyAlias 'profit'
+            keyPassword 'android'
             enableV1Signing true
             enableV2Signing true
             enableV3Signing true
