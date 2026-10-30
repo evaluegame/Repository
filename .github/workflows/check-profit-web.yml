@@ -3,9 +3,8 @@ name: Check Profit Web
 on:
   push:
     paths:
-      - 'v25-final.js'
-      - 'v25-stability.js'
-      - 'tests/profit-v25-smoke.mjs'
+      - 'v26-freedom-sync.js'
+      - 'tests/profit-v26-smoke.mjs'
       - 'index.html'
       - 'sw.js'
       - '.github/workflows/check-profit-web.yml'
@@ -20,10 +19,10 @@ jobs:
         with:
           node-version: '22'
       - name: Check Profit JavaScript syntax
-        run: node --check v25-final.js && node --check v25-stability.js && node --check tests/profit-v25-smoke.mjs
+        run: node --check v26-freedom-sync.js && node --check tests/profit-v26-smoke.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
       - name: Run Profit interaction smoke tests
-        run: node tests/profit-v25-smoke.mjs
+        run: node tests/profit-v26-smoke.mjs
