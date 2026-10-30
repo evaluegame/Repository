@@ -9,20 +9,20 @@ const html=`<!doctype html><html><body><div class="app"><div class="switch"><but
 const mark=x=>console.log(`CHECKPOINT:${x}`);
 
 async function prep(page,seed=true){
-  page.setDefaultTimeout(5000);
+  page.setDefaultTimeout(5000); mark('prep-start');
   await page.route('https://profit.test/**',r=>r.fulfill({status:200,contentType:'text/html',body:html}));
-  await page.route('https://profit-auth-api.onrender.com/**',async r=>{const req=r.request();if(req.method()==='OPTIONS')return r.fulfill({status:204,headers:cors,body:''});const u=new URL(req.url());if(u.pathname==='/data'&&req.method()==='GET')return r.fulfill({status:200,headers:cors,body:JSON.stringify({data:cloudState})});if(u.pathname==='/data'&&req.method()==='POST'){cloudState=req.postDataJSON()?.data||{};return r.fulfill({status:200,headers:cors,body:JSON.stringify({ok:true})})}return r.fulfill({status:200,headers:cors,body:'{}'})});
-  await page.goto('https://profit.test/');
-  await page.evaluate(seed=>{localStorage.setItem('profit_cloud_token_v1','test-token');if(seed)localStorage.setItem('simpleProfit_v3',JSON.stringify([{id:'old1',mode:'daily',date:'2026-10-29',revenue:100,expenses:20,incomeType:'passive'}]));},seed);
-  await page.addScriptTag({path:path.resolve('v26-freedom-sync.js')});
-  await page.waitForFunction(()=>window.__profitV26&&document.getElementById('pf26Section'));
+  await page.route('https://profit-auth-api.onrender.com/**',async r=>{const req=r.request();if(req.method()==='OPTIONS')return r.fulfill({status:204,headers:cors});const u=new URL(req.url());if(u.pathname==='/data'&&req.method()==='GET')return r.fulfill({status:200,headers:cors,body:JSON.stringify({data:cloudState})});if(u.pathname==='/data'&&req.method()==='POST'){cloudState=req.postDataJSON()?.data||{};return r.fulfill({status:200,headers:cors,body:JSON.stringify({ok:true})})}return r.fulfill({status:200,headers:cors,body:'{}'})});
+  mark('routes'); await page.goto('https://profit.test/',{waitUntil:'domcontentloaded'}); mark('goto');
+  await page.evaluate(seed=>{localStorage.setItem('profit_cloud_token_v1','test-token');if(seed)localStorage.setItem('simpleProfit_v3',JSON.stringify([{id:'old1',mode:'daily',date:'2026-10-29',revenue:100,expenses:20,incomeType:'passive'}]));},seed); mark('seed');
+  await page.addScriptTag({path:path.resolve('v26-freedom-sync.js')}); mark('script');
+  await page.waitForFunction(()=>window.__profitV26&&document.getElementById('pf26Section')); mark('ready');
 }
 
 let browser;
 try{
-  browser=await chromium.launch({headless:true});
-  const ctx=await browser.newContext({timezoneId:'Asia/Bangkok',acceptDownloads:true});
-  const page=await ctx.newPage();
+  mark('before-launch'); browser=await chromium.launch({headless:true,args:['--no-sandbox']}); mark('after-launch');
+  const ctx=await browser.newContext({timezoneId:'Asia/Bangkok',acceptDownloads:true}); mark('context');
+  const page=await ctx.newPage(); mark('page');
   await prep(page,true); mark('boot');
   assert.equal(await page.locator('#pf26FreedomCard').count(),0); assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('profitEntries_v8')||'[]').length),1); mark('hidden-default-and-legacy');
   await page.check('#pf26Enabled'); await page.fill('#pf26Target','1000000'); await page.fill('#pf26Invested','250000'); await page.fill('#pf26Monthly','5000'); await page.fill('#pf26Return','7'); await page.click('#pf26Save'); await page.waitForSelector('#pf26FreedomCard');
