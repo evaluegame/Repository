@@ -13,6 +13,7 @@ async function prep(page,seed=true){
   await page.evaluate(seed=>{localStorage.setItem('profit_cloud_token_v1','test-token');if(seed){localStorage.setItem('simpleProfit_v3',JSON.stringify([{id:'old1',mode:'daily',date:'2026-10-29',revenue:100,expenses:20,incomeType:'passive'}]));}},seed);
   await page.addScriptTag({path:path.resolve('v26-freedom-sync.js')});
   await page.waitForFunction(()=>window.__profitV26&&document.getElementById('pf26Section'));
+  await page.waitForTimeout(1400);
 }
 
 const browser=await chromium.launch({headless:true});
