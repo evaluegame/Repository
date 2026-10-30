@@ -56,6 +56,11 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setFitsSystemWindows(false);
         webView.setSystemUiVisibility(LEGACY_IMMERSIVE_FLAGS);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setVerticalScrollBarEnabled(false);
+        webView.setHorizontalScrollBarEnabled(false);
+        webView.setPadding(0, 0, 0, 0);
+        webView.setBackgroundColor(Color.rgb(246, 246, 244));
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
@@ -64,12 +69,23 @@ public class MainActivity extends Activity {
         settings.setDatabaseEnabled(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+        settings.setUserAgentString(settings.getUserAgentString() + " ProfitNative/1.5");
 
         webView.addJavascriptInterface(new ProfitBridge(), "AndroidProfit");
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                view.evaluateJavascript(
+                    "window.__PROFIT_NATIVE_APP__=true;" +
+                    "document.documentElement.classList.add('profit-native');" +
+                    "var a=document.getElementById('installBtn');if(a)a.remove();" +
+                    "var b=document.getElementById('installTop');if(b)b.remove();",
+                    null
+                );
                 enterImmersiveMode();
             }
         });
@@ -91,9 +107,17 @@ public class MainActivity extends Activity {
             }
         });
 
+        webView.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) enterImmersiveMode();
+        });
+        webView.setOnTouchListener((v, event) -> {
+            enterImmersiveMode();
+            return false;
+        });
+
         getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
             if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                getWindow().getDecorView().postDelayed(this::enterImmersiveMode, 250);
+                getWindow().getDecorView().postDelayed(this::enterImmersiveMode, 120);
             }
         });
 
