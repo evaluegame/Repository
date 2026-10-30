@@ -44,15 +44,18 @@ try{
   assert.equal(await page.locator('#pf27Section').evaluate(el=>getComputedStyle(el).display),'none','old passive Freedom settings should be hidden');
   assert.equal((await page.locator('#pf28FreedomSettings').innerText()).includes('Base freedom on passive income'),false,'Freedom settings must not contain passive-income mode');
 
+  const mainEta=await page.locator('#pav').innerText();
   const nextText=await page.locator('#nxt').innerText();
   const rewardBox=await page.locator('#pf29PassiveProgress').innerText();
+  assert.match(mainEta,/~4 days left/);
   assert.match(nextText,/Bills Helper/);
-  assert.match(nextText,/\$50(?:\.00)?\/day for 7 days/);
+  assert.match(nextText,/80% complete/);
+  assert.doesNotMatch(nextText,/\$10(?:\.00)?\/day left/);
   assert.match(rewardBox,/80%/);
   assert.match(rewardBox,/\$40(?:\.00)?\/day/);
-  assert.match(rewardBox,/\$10(?:\.00)?\/day/);
+  assert.match(rewardBox,/\$50(?:\.00)?\/day/);
   assert.match(rewardBox,/\+\$20(?:\.00)?\/day/);
-  assert.match(rewardBox,/~4 days/);
+  assert.doesNotMatch(rewardBox,/Still needed/);
   assert.match(rewardBox,/previous 7-day average/);
 
   await page.check('#pf28Enabled');
@@ -63,7 +66,7 @@ try{
   assert.doesNotMatch(freedom,/Passive-income freedom/);
   assert.match(freedom,/25%/);
 
-  console.log('Profit Freedom separation and passive reward progress tests passed');
+  console.log('Profit Freedom separation and days-left passive reward tests passed');
 } finally {
   await browser.close();
 }
