@@ -11,7 +11,7 @@ const ALLOWED=new Set([
   'https://profit-tracker-u9ge.onrender.com'
 ]);
 const ITER=210000;
-const SESSION_TTL=60*60*24*30;
+const SESSION_TTL=60*60*24*365;
 const MAX_BODY=1500000;
 
 function cors(req,res){
