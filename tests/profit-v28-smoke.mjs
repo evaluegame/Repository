@@ -22,9 +22,10 @@ try{
     const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const entries=[];
     const now=new Date();
-    for(let i=0;i<60;i++){
+    for(let i=0;i<21;i++){
       const d=new Date(now);d.setDate(d.getDate()-i);
-      entries.push({id:`p${i}`,mode:'daily',date:iso(d),revenue:i<30?40:20,expenses:0,incomeType:'passive'});
+      const amount=i<7?40:(i<14?20:10);
+      entries.push({id:`p${i}`,mode:'daily',date:iso(d),revenue:amount,expenses:0,incomeType:'passive'});
     }
     localStorage.setItem('profitEntries_v8',JSON.stringify(entries));
     localStorage.setItem('profitRewards_v1',JSON.stringify({p1:{at:1},p10:{at:1},p25:{at:1}}));
@@ -32,7 +33,9 @@ try{
     localStorage.setItem('profitFreedomGoal_v3',JSON.stringify({enabled:true,basis:'passive',target:1000000,invested:250000,monthlyContribution:5000,annualReturn:7,passiveTargetMonthly:3000}));
   });
   await page.addScriptTag({path:path.resolve('v28-freedom-passive.js')});
-  await page.waitForFunction(()=>window.__profitV28&&document.getElementById('pf28FreedomSettings')&&document.getElementById('pf28PassiveMetrics'));
+  await page.waitForFunction(()=>window.__profitV28&&document.getElementById('pf28FreedomSettings'));
+  await page.addScriptTag({path:path.resolve('v29-passive-rewards.js')});
+  await page.waitForFunction(()=>window.__profitV29&&document.getElementById('pf29PassiveProgress'));
 
   const migrated=await page.evaluate(()=>JSON.parse(localStorage.getItem('profitFreedomGoal_v3')));
   assert.equal(migrated.basis,'assets','Freedom must always use investment/assets mode');
@@ -42,13 +45,15 @@ try{
   assert.equal((await page.locator('#pf28FreedomSettings').innerText()).includes('Base freedom on passive income'),false,'Freedom settings must not contain passive-income mode');
 
   const nextText=await page.locator('#nxt').innerText();
-  const metrics=await page.locator('#pf28PassiveMetrics').innerText();
+  const rewardBox=await page.locator('#pf29PassiveProgress').innerText();
   assert.match(nextText,/Bills Helper/);
-  assert.match(nextText,/80% complete/);
-  assert.match(nextText,/\$10(?:\.00)?\/day left/);
-  assert.match(metrics,/80%/);
-  assert.match(metrics,/15 days/);
-  assert.match(metrics,/\+\$20(?:\.00)?\/day/);
+  assert.match(nextText,/\$50(?:\.00)?\/day for 7 days/);
+  assert.match(rewardBox,/80%/);
+  assert.match(rewardBox,/\$40(?:\.00)?\/day/);
+  assert.match(rewardBox,/\$10(?:\.00)?\/day/);
+  assert.match(rewardBox,/\+\$20(?:\.00)?\/day/);
+  assert.match(rewardBox,/~4 days/);
+  assert.match(rewardBox,/previous 7-day average/);
 
   await page.check('#pf28Enabled');
   await page.click('#pf28Save');
@@ -58,7 +63,7 @@ try{
   assert.doesNotMatch(freedom,/Passive-income freedom/);
   assert.match(freedom,/25%/);
 
-  console.log('Profit v28 separation and passive ETA tests passed');
+  console.log('Profit Freedom separation and passive reward progress tests passed');
 } finally {
   await browser.close();
 }
