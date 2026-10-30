@@ -1,14 +1,18 @@
-# Exact-head validation for Profit v29
+# Exact-head validation for Profit web/native behavior
 name: Check Profit Web
 
 on:
   push:
     paths:
+      - 'v21-cloud-auth.js'
       - 'v27-freedom-sync.js'
       - 'v28-freedom-passive.js'
       - 'v29-passive-rewards.js'
+      - 'v30-native-ui.js'
+      - 'v13-install-roi.js'
       - 'tests/profit-v26-smoke.mjs'
       - 'tests/profit-v28-smoke.mjs'
+      - 'tests/profit-v30-native-session-smoke.mjs'
       - 'index.html'
       - 'sw.js'
       - '.github/workflows/check-profit-web.yml'
@@ -23,7 +27,7 @@ jobs:
         with:
           node-version: '22'
       - name: Check Profit JavaScript syntax
-        run: node --check v27-freedom-sync.js && node --check v28-freedom-passive.js && node --check v29-passive-rewards.js && node --check tests/profit-v26-smoke.mjs && node --check tests/profit-v28-smoke.mjs
+        run: node --check v21-cloud-auth.js && node --check v27-freedom-sync.js && node --check v28-freedom-passive.js && node --check v29-passive-rewards.js && node --check v30-native-ui.js && node --check v13-install-roi.js && node --check tests/profit-v26-smoke.mjs && node --check tests/profit-v28-smoke.mjs && node --check tests/profit-v30-native-session-smoke.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright
@@ -32,3 +36,4 @@ jobs:
         run: |
           node tests/profit-v26-smoke.mjs
           node tests/profit-v28-smoke.mjs
+          node tests/profit-v30-native-session-smoke.mjs
