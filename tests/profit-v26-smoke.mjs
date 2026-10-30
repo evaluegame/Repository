@@ -10,12 +10,17 @@ const mark=x=>console.log(`CHECKPOINT:${x}`);
 
 async function prep(page,seed=true){
   page.setDefaultTimeout(5000); mark('prep-start');
+  page.on('pageerror',e=>console.error('PAGEERROR',e.message));
+  page.on('console',m=>console.log('BROWSER',m.type(),m.text()));
   await page.route('https://profit.test/**',r=>r.fulfill({status:200,contentType:'text/html',body:html}));
   await page.route('https://profit-auth-api.onrender.com/**',async r=>{const req=r.request();if(req.method()==='OPTIONS')return r.fulfill({status:204,headers:cors});const u=new URL(req.url());if(u.pathname==='/data'&&req.method()==='GET')return r.fulfill({status:200,headers:cors,body:JSON.stringify({data:cloudState})});if(u.pathname==='/data'&&req.method()==='POST'){cloudState=req.postDataJSON()?.data||{};return r.fulfill({status:200,headers:cors,body:JSON.stringify({ok:true})})}return r.fulfill({status:200,headers:cors,body:'{}'})});
   mark('routes'); await page.goto('https://profit.test/',{waitUntil:'domcontentloaded'}); mark('goto');
   await page.evaluate(seed=>{localStorage.setItem('profit_cloud_token_v1','test-token');if(seed)localStorage.setItem('simpleProfit_v3',JSON.stringify([{id:'old1',mode:'daily',date:'2026-10-29',revenue:100,expenses:20,incomeType:'passive'}]));},seed); mark('seed');
   await page.addScriptTag({path:path.resolve('v26-freedom-sync.js')}); mark('script');
-  await page.waitForFunction(()=>window.__profitV26&&document.getElementById('pf26Section')); mark('ready');
+  await page.waitForTimeout(400);
+  const diag=await page.evaluate(()=>({api:!!window.__profitV26,section:!!document.getElementById('pf26Section'),body:document.body.innerHTML.slice(0,1000)})); console.log('DIAG',JSON.stringify(diag));
+  if(!diag.api||!diag.section)throw new Error(`v26 boot failed api=${diag.api} section=${diag.section}`);
+  mark('ready');
 }
 
 let browser;
