@@ -3,7 +3,11 @@ package com.ainrox.profit;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -26,7 +30,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        enterImmersiveMode();
+
         webView = new WebView(this);
+        webView.setFitsSystemWindows(false);
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
@@ -58,6 +65,32 @@ public class MainActivity extends Activity {
         webView.loadUrl(APP_URL);
     }
 
+    private void enterImmersiveMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) enterImmersiveMode();
+    }
+
     public class ProfitBridge {
         @JavascriptInterface
         public void exportBackup(String json, String filename) {
@@ -82,6 +115,7 @@ public class MainActivity extends Activity {
                 filePathCallback.onReceiveValue(results);
                 filePathCallback = null;
             }
+            enterImmersiveMode();
             return;
         }
 
@@ -97,6 +131,7 @@ public class MainActivity extends Activity {
                 }
             }
             pendingExportJson = null;
+            enterImmersiveMode();
         }
     }
 
