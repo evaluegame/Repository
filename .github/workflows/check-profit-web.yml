@@ -3,7 +3,7 @@ name: Check Profit Web
 on:
   push:
     paths:
-      - 'v26-freedom-sync.js'
+      - 'v27-freedom-sync.js'
       - 'tests/profit-v26-smoke.mjs'
       - 'index.html'
       - 'sw.js'
@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '22'
       - name: Check Profit JavaScript syntax
-        run: node --check v26-freedom-sync.js && node --check tests/profit-v26-smoke.mjs
+        run: node --check v27-freedom-sync.js && node --check tests/profit-v26-smoke.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright
