@@ -16,6 +16,7 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      PROFIT_KEYSTORE: /home/runner/.android/profit-stable.keystore
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
@@ -25,8 +26,23 @@ jobs:
       - name: Restore stable Profit signing key
         uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
-          key: profit-android-stable-signing-v1
+          path: /home/runner/.android/profit-stable.keystore
+          key: profit-android-stable-signing-v2
+      - name: Ensure stable Profit signing key exists
+        run: |
+          mkdir -p /home/runner/.android
+          if [ ! -f "$PROFIT_KEYSTORE" ]; then
+            keytool -genkeypair -v \
+              -keystore "$PROFIT_KEYSTORE" \
+              -storepass android \
+              -alias profit \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Profit Android,O=AINROX,C=US"
+          fi
+          keytool -list -v -keystore "$PROFIT_KEYSTORE" -storepass android -alias profit | grep -E 'SHA256:|SHA1:'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
