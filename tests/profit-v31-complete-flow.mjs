@@ -100,7 +100,7 @@ try{
  await page.locator('#paLoginEmail').fill(users.b.email);await page.locator('#paLoginPassword').fill('correct-password');await page.locator('#paLogin button[type=submit]').click();
  await page.waitForFunction(()=>window.__profitReliability&&JSON.parse(localStorage.getItem('profitEntries_v8')||'[]').length===1);
  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('profitEntries_v8')).map(e=>e.id)),['bob-only']);
- await fs.mkdir('test-results',{recursive:true});await page.locator('#gear').click();await page.screenshot({path:'test-results/profit-v31-settings.png',fullPage:true});
+ await fs.mkdir('test-results',{recursive:true});await page.locator('#gear').click();await page.screenshot({path:'test-results/profit-v31-settings.png'});
  assert.deepEqual(errors,[],'full startup should have no uncaught JavaScript errors');
  assert.equal(loginCount,3,'reopening or network failures must not require another login');
  console.log('PASS: real login bootstrap, late login, loading/errors, cloud restore/merge, automatic sync, deletion, persisted session, expired-session recovery, optional popup and account isolation');
