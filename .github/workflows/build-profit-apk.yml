@@ -83,6 +83,15 @@ jobs:
         run: |
           mkdir -p freedom-fighter-site/downloads
           cp Profit-Android.apk freedom-fighter-site/downloads/Profit-Android.apk
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          source = pathlib.Path('Profit-Android.apk')
+          version = re.search(r"versionName '([^']+)'", pathlib.Path('profit-mobile/android/app/build.gradle').read_text()).group(1)
+          name = 'Profit-Android-v' + version + '.apk'
+          data = source.read_bytes()
+          pathlib.Path('freedom-fighter-site/downloads', name).write_bytes(data)
+          pathlib.Path('freedom-fighter-site/downloads/release.json').write_text(json.dumps({'version': version, 'file': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}, indent=2) + '\n')
+          PY
           B64="$(base64 -w0 Profit-Android.apk)"
           printf 'window.PROFIT_APK_B64="%s";window.PROFIT_APK_SIZE=%s;\n' "$B64" "$(wc -c < Profit-Android.apk)" > freedom-fighter-site/apk-data.js
           echo "APK bytes: $(wc -c < Profit-Android.apk)"
@@ -91,15 +100,19 @@ jobs:
           mkdir -p /tmp/profit-apk-publish
           cp freedom-fighter-site/downloads/Profit-Android.apk /tmp/profit-apk-publish/Profit-Android.apk
           cp freedom-fighter-site/apk-data.js /tmp/profit-apk-publish/apk-data.js
+          cp freedom-fighter-site/downloads/release.json /tmp/profit-apk-publish/release.json
+          cp freedom-fighter-site/downloads/Profit-Android-v*.apk /tmp/profit-apk-publish/
           git reset --hard HEAD
           git fetch origin main
           git rebase origin/main
           mkdir -p freedom-fighter-site/downloads
           cp /tmp/profit-apk-publish/Profit-Android.apk freedom-fighter-site/downloads/Profit-Android.apk
           cp /tmp/profit-apk-publish/apk-data.js freedom-fighter-site/apk-data.js
+          cp /tmp/profit-apk-publish/release.json freedom-fighter-site/downloads/release.json
+          cp /tmp/profit-apk-publish/Profit-Android-v*.apk freedom-fighter-site/downloads/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add freedom-fighter-site/downloads/Profit-Android.apk freedom-fighter-site/apk-data.js
+          git add freedom-fighter-site/downloads/ freedom-fighter-site/apk-data.js
           if git diff --cached --quiet; then
             echo "Website APK already matches the validated APK."
           else
