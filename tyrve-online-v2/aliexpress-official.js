@@ -82,3 +82,47 @@ export async function officialFreight({productId,qty=1,price,country='US',sendFr
  const list=arr(root?.aeop_freight_calculate_result_for_buyer_d_t_o_list?.aeop_freight_calculate_result_for_buyer_dto).filter(x=>x?.success!==false&&Number(x?.error_code||0)===0);
  return list.map(x=>({service:String(x?.service_name||''),estimatedDelivery:String(x?.estimated_delivery_time||''),amount:Number(x?.freight?.amount||0)||0,currency:String(x?.freight?.currency_code||'USD')}));
 }
+
+export async function officialPlaceOrder({address,items}){
+ if(!address?.line1||!address?.country||!address?.name||!address?.postalCode)throw Object.assign(new Error('Complete shipping address is required for AliExpress fulfillment'),{code:'ALIEXPRESS_ADDRESS_REQUIRED'});
+ if(!Array.isArray(items)||!items.length)throw Object.assign(new Error('At least one product is required for AliExpress fulfillment'),{code:'ALIEXPRESS_ITEMS_REQUIRED'});
+ const dto={
+  logistics_address:{
+   address:String(address.line1),
+   address2:String(address.line2||''),
+   city:String(address.city||''),
+   contact_person:String(address.name),
+   country:String(address.country),
+   full_name:String(address.name),
+   locale:'en_US',
+   mobile_no:String(address.phone||''),
+   phone_country:String(address.phoneCountry||'+1'),
+   province:String(address.state||''),
+   zip:String(address.postalCode)
+  },
+  product_items:items.map(x=>({
+   product_count:Number(x.qty),
+   product_id:Number(x.productId),
+   sku_attr:String(x.skuAttr||''),
+   logistics_service_name:String(x.logisticsServiceName||''),
+   order_memo:'Tyrve dropshipping order. Please do not include supplier pricing or promotional material.'
+  }))
+ };
+ const j=await topCall('aliexpress.trade.buy.placeorder',{param_place_order_request4_open_api_d_t_o:dto});
+ const root=j.aliexpress_trade_buy_placeorder_response?.result||j.result;
+ if(!root)throw Object.assign(new Error('AliExpress order response missing'),{code:'ALIEXPRESS_ORDER_MISSING'});
+ const success=root.is_success===true||String(root.is_success)==='true';
+ const orderIds=arr(root.order_list?.number??root.order_list).map(String).filter(Boolean);
+ if(!success||!orderIds.length)throw Object.assign(new Error(root.error_msg||'AliExpress order placement failed'),{code:String(root.error_code||'ALIEXPRESS_ORDER_FAILED'),raw:root});
+ return {success:true,orderIds};
+}
+
+export async function officialOrderDetail(orderId){
+ const j=await topCall('aliexpress.trade.ds.order.get',{single_order_query:{order_id:Number(orderId)}});
+ return j.aliexpress_trade_ds_order_get_response?.result||j.result||null;
+}
+
+export async function officialTracking(orderId){
+ const j=await topCall('aliexpress.logistics.ds.trackinginfo.query',{order_id:Number(orderId)});
+ return j.aliexpress_logistics_ds_trackinginfo_query_response?.result||j.result||null;
+}
