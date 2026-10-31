@@ -1,8 +1,8 @@
 {
   "name": "omnipost-online",
-  "version": "10.0.0",
+  "version": "10.0.1",
   "private": true,
-  "description": "OmniPost Direct: original-quality social video publisher with whole-video local AI and direct official social APIs",
-  "scripts": {"start": "node server-v10.js"},
+  "description": "AiPost Direct: original-quality social video publisher with whole-video local AI and direct official social APIs",
+  "scripts": {"start": "node server-v10-legal.js"},
   "engines": {"node": ">=18"}
 }
