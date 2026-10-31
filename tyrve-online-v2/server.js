@@ -1,165 +1,280 @@
 import http from 'node:http';
+import crypto from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {URL} from 'node:url';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const PORT=Number(process.env.PORT||10000);
 const BASE=process.env.BASE_URL||`http://localhost:${PORT}`;
-const CJ_API_KEY=process.env.CJ_API_KEY||'';
-const CJ_ROOT='https://developers.cjdropshipping.com/api2.0/v1';
-let tokenCache={token:'',expires:0};
-let categoryCache={items:[],expires:0};
+const ALI_MCP_URL=process.env.ALIEXPRESS_MCP_URL||'https://tyrve-aliexpress-reader.onrender.com/mcp';
+const STRIPE_SECRET_KEY=process.env.STRIPE_SECRET_KEY||'';
 
-const blocked=/\b(gun|firearm|rifle|pistol|ammo|ammunition|knife|switchblade|sword|taser|pepper spray|mace|vape|cigarette|nicotine|cbd|thc|marijuana|cannabis|alcohol|liquor|wine|beer|steroid|porn|sex toy|gambling)\b/i;
-const safeProduct=p=>!blocked.test(`${p?.nameEn||''} ${p?.oneCategoryName||''} ${p?.twoCategoryName||''} ${p?.threeCategoryName||''} ${p?.description||''}`);
-const retail=n=>{const c=Number(n||0);if(!Number.isFinite(c)||c<=0)return null;const raw=Math.max(c*1.75,c+6);return Math.floor(raw)+0.99};
-const cleanHtml=s=>String(s||'').replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,1200);
+const CATEGORIES=[
+ {id:'phone',name:'Phone Accessories',query:'phone accessories'},
+ {id:'computer',name:'Computer Accessories',query:'computer accessories'},
+ {id:'home',name:'Home & Living',query:'home organization gadgets'},
+ {id:'lighting',name:'Lighting',query:'led home lighting'},
+ {id:'office',name:'Office & Desk',query:'office desk accessories'},
+ {id:'travel',name:'Travel Accessories',query:'travel accessories organizer'},
+ {id:'pet',name:'Pet Supplies',query:'pet accessories'},
+ {id:'fitness',name:'Fitness Accessories',query:'fitness accessories'},
+ {id:'car',name:'Car Accessories',query:'car interior accessories'},
+ {id:'storage',name:'Storage & Organization',query:'storage organization'},
+ {id:'kitchen',name:'Kitchen Accessories',query:'kitchen accessories'},
+ {id:'smart',name:'Smart Home',query:'smart home accessories'}
+];
+
+const blocked=/\b(gun|firearm|rifle|pistol|revolver|ammo|ammunition|bullet|silencer|suppressor|knife|switchblade|dagger|sword|machete|taser|stun gun|pepper spray|mace|brass knuckle|firework|explosive|detonator|poison|toxin|pesticide|vape|vaping|cigarette|cigar|nicotine|tobacco|cbd|thc|marijuana|cannabis|weed|mushroom|psychedelic|alcohol|liquor|wine|beer|vodka|whiskey|steroid|hormone|dnp|diet pill|laxative|porn|adult toy|sex toy|bdsm|casino|gambling|betting|lottery)\b/i;
+const brandRisk=/\b(apple|iphone|airpods|samsung|sony|nintendo|playstation|xbox|nike|adidas|puma|gucci|prada|chanel|hermes|louis vuitton|lv|dyson|lego|disney|marvel|pokemon|xiaomi|huawei)\b/i;
+const safeQuery=q=>!blocked.test(String(q||''))&&!brandRisk.test(String(q||''));
+const safeProduct=p=>safeQuery(`${p?.title||''} ${p?.name||''} ${p?.store||''} ${p?.category||''}`);
+
+const searchCache=new Map();
+const detailCache=new Map();
+function cacheGet(map,key){const x=map.get(key);if(!x||x.exp<Date.now()){map.delete(key);return null}return x.value}
+function cacheSet(map,key,value,ttl){map.set(key,{value,exp:Date.now()+ttl});return value}
+
+let mcpClient=null;
+let mcpConnecting=null;
+async function getMcp(){
+ if(mcpClient)return mcpClient;
+ if(mcpConnecting)return mcpConnecting;
+ mcpConnecting=(async()=>{
+  const client=new Client({name:'tyrve-commerce',version:'2.0.0'},{capabilities:{}});
+  const transport=new StreamableHTTPClientTransport(new URL(ALI_MCP_URL));
+  await client.connect(transport);
+  const tools=await client.listTools();
+  const names=(tools.tools||[]).map(x=>x.name);
+  if(!names.includes('search_aliexpress')||!names.includes('get_aliexpress_product'))throw new Error('AliExpress reader tools are unavailable');
+  mcpClient=client;
+  return client;
+ })();
+ try{return await mcpConnecting}finally{mcpConnecting=null}
+}
+function parseToolResult(r){
+ if(r?.isError)throw new Error('AliExpress reader returned an error');
+ if(r?.structuredContent&&typeof r.structuredContent==='object')return r.structuredContent;
+ const text=(r?.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n').trim();
+ if(!text)return {};
+ try{return JSON.parse(text)}catch{return {text}}
+}
+async function callTool(name,args){
+ try{
+  const client=await getMcp();
+  const r=await client.callTool({name,arguments:args});
+  const out=parseToolResult(r);
+  if(out?.error)throw new Error(out.error);
+  return out;
+ }catch(e){
+  mcpClient=null;
+  throw Object.assign(new Error(`AliExpress connection failed: ${e.message}`),{status:503,code:'ALIEXPRESS_UNAVAILABLE'});
+ }
+}
+
+function parseNumbers(v){
+ if(v===null||v===undefined)return [];
+ if(typeof v==='number')return Number.isFinite(v)?[v]:[];
+ if(typeof v==='string')return (v.replace(/,/g,'').match(/\d+(?:\.\d+)?/g)||[]).map(Number).filter(Number.isFinite);
+ if(Array.isArray(v))return v.flatMap(parseNumbers);
+ if(typeof v==='object')return Object.values(v).flatMap(parseNumbers);
+ return [];
+}
+function pickCost(raw){
+ const candidates=[raw?.sale_price,raw?.salePrice,raw?.price,raw?.selected_price,raw?.selectedPrice,raw?.prices,raw?.sku_price,raw?.skuPrice];
+ const nums=candidates.flatMap(parseNumbers).filter(n=>n>0&&n<100000);
+ return nums.length?Math.max(...nums):null;
+}
+function pickStock(raw){
+ for(const key of ['stock','inventory','quantity','available_quantity','availableQuantity']){
+  const v=raw?.[key];
+  if(typeof v==='number'&&Number.isFinite(v))return v;
+  if(typeof v==='string'&&/^\d+$/.test(v.trim()))return Number(v);
+ }
+ return null;
+}
+function pickShippingCost(raw){
+ const s=raw?.shipping;
+ if(!s)return null;
+ if(typeof s==='string'&&/free/i.test(s))return 0;
+ const vals=[];
+ const walk=(obj,depth=0)=>{
+  if(depth>4||obj===null||obj===undefined)return;
+  if(typeof obj==='object'&&!Array.isArray(obj)){
+   for(const [k,v] of Object.entries(obj)){
+    if(/fee|cost|price|amount/i.test(k))vals.push(...parseNumbers(v));
+    else if(typeof v==='object')walk(v,depth+1);
+   }
+  }else if(Array.isArray(obj))obj.forEach(v=>walk(v,depth+1));
+ };
+ walk(s);
+ const clean=vals.filter(n=>n>=0&&n<500);
+ return clean.length?Math.min(...clean):null;
+}
+function retail(cost,ship=null){
+ if(!Number.isFinite(cost)||cost<=0)return null;
+ const landed=cost+(Number.isFinite(ship)?ship:6);
+ const raw=Math.max(landed*1.65,landed+8);
+ return Number((Math.ceil(raw)-0.01).toFixed(2));
+}
+function cleanText(s,max=1200){return String(s||'').replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,max)}
+function safeUrl(s){try{const u=new URL(String(s||''));return /^https?:$/.test(u.protocol)?u.toString():''}catch{return ''}}
+function normalizeSearch(raw,category='AliExpress'){
+ const cost=pickCost(raw);
+ const image=safeUrl(raw?.image||raw?.image_url||raw?.imageUrl||raw?.main_image||raw?.mainImage);
+ const url=safeUrl(raw?.url||raw?.product_url||raw?.productUrl||`https://www.aliexpress.com/item/${raw?.id||''}.html`);
+ const p={
+  id:String(raw?.id||raw?.product_id||raw?.productId||''),
+  title:cleanText(raw?.title||raw?.name,220),
+  image,url,category,
+  supplier:'AliExpress',
+  supplierCost:cost,
+  price:retail(cost),
+  rating:Number(raw?.rating||0)||null,
+  orders:raw?.orders||raw?.orders_sold||raw?.ordersSold||null,
+  currency:String(raw?.currency||'USD'),
+  stock:null,
+  real:true,
+  verified:false
+ };
+ return p;
+}
+function normalizeDetail(raw){
+ const cost=pickCost(raw);
+ const ship=pickShippingCost(raw);
+ const images=(raw?.images||raw?.image_urls||raw?.imageUrls||[]).map(safeUrl).filter(Boolean);
+ const image=safeUrl(raw?.image||raw?.image_url||raw?.main_image)||images[0]||'';
+ const id=String(raw?.id||raw?.product_id||raw?.productId||'');
+ const stock=pickStock(raw);
+ const partial=Boolean(raw?.partial);
+ const p={
+  id,
+  title:cleanText(raw?.title||raw?.name,260),
+  image,images,
+  url:safeUrl(raw?.url||raw?.product_url||`https://www.aliexpress.com/item/${id}.html`),
+  category:'AliExpress',supplier:'AliExpress',supplierCost:cost,shippingCost:ship,
+  price:retail(cost,ship),stock,
+  rating:Number(raw?.rating||0)||null,
+  reviews:raw?.review_count||raw?.reviews||null,
+  orders:raw?.orders||null,
+  store:cleanText(raw?.store||raw?.store_name,120),
+  description:cleanText(raw?.description||raw?.specs||'',1600),
+  specs:raw?.specs||{},variants:raw?.sku_options||raw?.variants||[],shipping:raw?.shipping||null,
+  partial,real:true,verified:!partial
+ };
+ p.available=Boolean(p.id&&p.title&&p.image&&p.price&&p.url&&!partial&&(stock===null||stock>0)&&safeProduct(p));
+ return p;
+}
+
+async function searchAli(query,page=1,sort='orders',category='AliExpress'){
+ if(!safeQuery(query))throw Object.assign(new Error('That search is not available on Tyrve.'),{status:400,code:'BLOCKED_SEARCH'});
+ const key=JSON.stringify({query,page,sort});
+ const cached=cacheGet(searchCache,key);if(cached)return cached;
+ const raw=await callTool('search_aliexpress',{query,page,sort});
+ const rows=Array.isArray(raw?.items)?raw.items:[];
+ const items=rows.map(x=>normalizeSearch(x,category)).filter(x=>x.id&&x.title&&x.image&&x.url&&x.price&&safeProduct(x));
+ return cacheSet(searchCache,key,{items,total:Number(raw?.total||items.length),page,returned:items.length,source:'AliExpress',real:true},10*60*1000);
+}
+async function getAliDetail(id){
+ const key=String(id);
+ const cached=cacheGet(detailCache,key);if(cached)return cached;
+ const raw=await callTool('get_aliexpress_product',{product_id:key});
+ const p=normalizeDetail(raw);
+ if(!p.id||!safeProduct(p))throw Object.assign(new Error('Product is not available'),{status:404,code:'PRODUCT_UNAVAILABLE'});
+ return cacheSet(detailCache,key,p,20*60*1000);
+}
 
 function send(res,code,data,type='application/json'){
  res.writeHead(code,{
   'content-type':type,
-  'cache-control':'no-store',
+  'cache-control':type.startsWith('text/html')?'no-cache':'no-store',
   'x-content-type-options':'nosniff',
   'x-frame-options':'DENY',
-  'referrer-policy':'strict-origin-when-cross-origin'
+  'referrer-policy':'strict-origin-when-cross-origin',
+  'content-security-policy':"default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com"
  });
  res.end(type==='application/json'?JSON.stringify(data):data);
 }
+function readBody(req){return new Promise((resolve,reject)=>{let s='';req.on('data',c=>{s+=c;if(s.length>300000){reject(new Error('Request too large'));req.destroy()}});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch{reject(new Error('Invalid JSON'))}});req.on('error',reject)})}
 
-async function getToken(){
- if(!CJ_API_KEY) throw Object.assign(new Error('CJ supplier account is not connected'),{status:503,code:'CJ_NOT_CONNECTED'});
- if(tokenCache.token && Date.now()<tokenCache.expires-3600000)return tokenCache.token;
- const r=await fetch(`${CJ_ROOT}/authentication/getAccessToken`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({apiKey:CJ_API_KEY})});
- const j=await r.json();
- if(!r.ok||!j?.result||!j?.data?.accessToken)throw Object.assign(new Error(j?.message||'CJ authentication failed'),{status:502,code:'CJ_AUTH_FAILED'});
- tokenCache={token:j.data.accessToken,expires:Date.parse(j.data.accessTokenExpiryDate)||Date.now()+150*86400000};
- return tokenCache.token;
-}
-
-async function cjGet(path,params={}){
- const token=await getToken();
- const u=new URL(`${CJ_ROOT}${path}`);
- for(const [k,v] of Object.entries(params)){
-  if(v===undefined||v===null||v==='')continue;
-  if(Array.isArray(v))v.forEach(x=>u.searchParams.append(k,x)); else u.searchParams.set(k,String(v));
+async function createCheckout(items){
+ if(!STRIPE_SECRET_KEY)throw Object.assign(new Error('Secure payment connection still needs to be activated on the server.'),{status:503,code:'PAYMENTS_NOT_CONNECTED'});
+ if(!Array.isArray(items)||!items.length||items.length>8)throw Object.assign(new Error('Your bag must contain 1–8 products.'),{status:400});
+ const verified=[];
+ for(const row of items){
+  const qty=Math.max(1,Math.min(5,Number(row.qty)||1));
+  const p=await getAliDetail(row.id);
+  if(!p.available)throw Object.assign(new Error(`${p.title||'A product'} cannot be verified for sale right now.`),{status:409});
+  verified.push({p,qty});
  }
- const r=await fetch(u,{headers:{'CJ-Access-Token':token}});
+ const form=new URLSearchParams();
+ form.set('mode','payment');
+ form.set('success_url',`${BASE}/?paid=1&session_id={CHECKOUT_SESSION_ID}`);
+ form.set('cancel_url',`${BASE}/?checkout=cancelled`);
+ form.set('customer_creation','always');
+ form.set('billing_address_collection','auto');
+ form.set('phone_number_collection[enabled]','true');
+ form.set('shipping_address_collection[allowed_countries][0]','US');
+ form.set('metadata[supplier]','AliExpress');
+ form.set('metadata[fulfillment_mode]','manual_verified');
+ verified.forEach(({p,qty},i)=>{
+  const cents=Math.round(p.price*100);
+  form.set(`line_items[${i}][price_data][currency]`,'usd');
+  form.set(`line_items[${i}][price_data][unit_amount]`,String(cents));
+  form.set(`line_items[${i}][price_data][product_data][name]`,p.title.slice(0,120));
+  if(p.image)form.set(`line_items[${i}][price_data][product_data][images][0]`,p.image);
+  form.set(`line_items[${i}][price_data][product_data][metadata][aliexpress_id]`,p.id);
+  form.set(`line_items[${i}][quantity]`,String(qty));
+  form.set(`metadata[item_${i}]`,`${p.id}|${qty}|${p.url}`.slice(0,500));
+  form.set(`payment_intent_data[metadata][item_${i}]`,`${p.id}|${qty}`);
+ });
+ const r=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{authorization:`Bearer ${STRIPE_SECRET_KEY}`,'content-type':'application/x-www-form-urlencoded','idempotency-key':crypto.randomUUID()},body:form});
  const j=await r.json();
- if(!r.ok||j?.result===false||j?.success===false)throw Object.assign(new Error(j?.message||'CJ request failed'),{status:r.status||502,code:'CJ_API_ERROR'});
- return j.data;
-}
-
-function mapProduct(p){
- const cost=Number(p.discountPrice||p.nowPrice||p.sellPrice||0);
- return {
-  id:p.id,
-  sku:p.sku||p.spu||'',
-  title:p.nameEn||'Untitled product',
-  image:p.bigImage||'',
-  category:p.oneCategoryName||p.twoCategoryName||p.threeCategoryName||'Other',
-  subcategory:p.threeCategoryName||p.twoCategoryName||'',
-  categoryId:p.categoryId||'',
-  supplier:p.supplierName||'CJdropshipping',
-  supplierCost:cost,
-  price:retail(cost),
-  stock:Number(p.totalVerifiedInventory||p.warehouseInventoryNum||0),
-  verifiedStock:Number(p.totalVerifiedInventory||0),
-  deliveryCycle:p.deliveryCycle||'',
-  description:cleanHtml(p.description),
-  freeShipping:Number(p.addMarkStatus||0)===1,
-  real:true
- };
-}
-
-async function realCategories(){
- if(categoryCache.items.length&&Date.now()<categoryCache.expires)return categoryCache.items;
- const data=await cjGet('/product/getCategory');
- const out=[];
- for(const first of Array.isArray(data)?data:[]){
-  for(const second of first.categoryFirstList||[]){
-   for(const third of second.categorySecondList||[]){
-    const name=`${first.categoryFirstName||''} ${second.categorySecondName||''} ${third.categoryName||''}`;
-    if(!blocked.test(name))out.push({id:third.categoryId,name:third.categoryName,group:first.categoryFirstName,section:second.categorySecondName});
-   }
-  }
- }
- categoryCache={items:out,expires:Date.now()+6*3600000};
- return out;
-}
-
-async function listProducts(u){
- const page=Math.max(1,Math.min(1000,Number(u.searchParams.get('page')||1)));
- const size=Math.max(1,Math.min(48,Number(u.searchParams.get('limit')||24)));
- const q=u.searchParams.get('q')||'';
- const categoryId=u.searchParams.get('categoryId')||'';
- const sort=u.searchParams.get('sort')||'featured';
- const params={page,size,keyWord:q,categoryId,features:['enable_category','enable_description'],verifiedWarehouse:1,startWarehouseInventory:1};
- if(sort==='price_asc'){params.orderBy=2;params.sort='asc'}
- if(sort==='price_desc'){params.orderBy=2;params.sort='desc'}
- if(sort==='new'){params.orderBy=3;params.sort='desc'}
- if(sort==='stock'){params.orderBy=4;params.sort='desc'}
- const data=await cjGet('/product/listV2',params);
- const raw=(data?.content||[]).flatMap(x=>x.productList||[]);
- const items=raw.filter(safeProduct).map(mapProduct).filter(x=>x.id&&x.image&&x.price&&x.stock>0);
- return {items,total:Number(data?.totalRecords||items.length),page:Number(data?.pageNumber||page),pages:Number(data?.totalPages||1),source:'CJdropshipping',real:true};
-}
-
-async function detail(id){
- const data=await cjGet('/product/query',{pid:id});
- const p=data?.productInfo||data;
- if(!p)return null;
- const normalized={
-  id:p.pid||p.id||id,
-  sku:p.productSku||p.sku||'',
-  nameEn:p.productNameEn||p.nameEn||'Product',
-  bigImage:p.productImage||p.bigImage||'',
-  sellPrice:p.sellPrice,
-  nowPrice:p.nowPrice,
-  discountPrice:p.discountPrice,
-  categoryId:p.categoryId,
-  oneCategoryName:p.categoryName?.split('/')?.[0]?.trim()||p.oneCategoryName,
-  twoCategoryName:p.twoCategoryName,
-  threeCategoryName:p.threeCategoryName,
-  description:p.description||p.productDescription||'',
-  warehouseInventoryNum:p.warehouseInventoryNum,
-  totalVerifiedInventory:p.totalVerifiedInventory,
-  supplierName:p.supplierName,
-  deliveryCycle:p.deliveryCycle,
-  addMarkStatus:p.addMarkStatus
- };
- if(!safeProduct(normalized))return null;
- return mapProduct(normalized);
+ if(!r.ok||!j?.url)throw Object.assign(new Error(j?.error?.message||'Stripe checkout could not be created'),{status:502,code:'STRIPE_ERROR'});
+ return {url:j.url,id:j.id};
 }
 
 const index=await readFile(new URL('./public/index.html',import.meta.url),'utf8');
+let healthCache={value:null,exp:0};
+async function health(){
+ if(healthCache.value&&healthCache.exp>Date.now())return healthCache.value;
+ let supplierConnected=false,message='';
+ try{await getMcp();supplierConnected=true}catch(e){message=e.message}
+ const value={ok:true,supplierConnected,catalog:supplierConnected?'AliExpress':'offline',realOnly:true,payments:Boolean(STRIPE_SECRET_KEY),market:'US',currency:'USD',message};
+ healthCache={value,exp:Date.now()+60000};return value;
+}
 
 const server=http.createServer(async(req,res)=>{
  try{
   const u=new URL(req.url,BASE);
   if(u.pathname==='/')return send(res,200,index,'text/html; charset=utf-8');
-  if(u.pathname==='/api/health'){
-   if(!CJ_API_KEY)return send(res,200,{ok:true,supplierConnected:false,catalog:'offline',realOnly:true,payments:false});
-   try{await getToken();return send(res,200,{ok:true,supplierConnected:true,catalog:'CJdropshipping',realOnly:true,payments:Boolean(process.env.STRIPE_SECRET_KEY)});}catch(e){return send(res,200,{ok:true,supplierConnected:false,catalog:'authorization_error',realOnly:true,payments:false,message:e.message});}
+  if(u.pathname==='/api/health')return send(res,200,await health());
+  if(u.pathname==='/api/categories')return send(res,200,CATEGORIES);
+  if(u.pathname==='/api/products'){
+   const page=Math.max(1,Math.min(100,Number(u.searchParams.get('page')||1)));
+   const categoryId=u.searchParams.get('category')||'';
+   const category=CATEGORIES.find(x=>x.id===categoryId);
+   const q=(u.searchParams.get('q')||'').trim();
+   const query=q||(category?.query||'useful home gadgets');
+   const sortMap={featured:'orders',orders:'orders',new:'newest',price_asc:'price_asc',price_desc:'price_desc'};
+   const data=await searchAli(query,page,sortMap[u.searchParams.get('sort')]||'orders',category?.name||'AliExpress');
+   return send(res,200,data);
   }
-  if(u.pathname==='/api/categories'){
-   const rows=await realCategories();
-   const groups=new Map();
-   for(const x of rows){if(!groups.has(x.group))groups.set(x.group,{category:x.group,count:0,ids:[]});const g=groups.get(x.group);g.count++;g.ids.push(x.id)}
-   return send(res,200,[...groups.values()]);
-  }
-  if(u.pathname==='/api/products')return send(res,200,await listProducts(u));
   if(u.pathname.startsWith('/api/product/')){
-   const p=await detail(decodeURIComponent(u.pathname.split('/').pop()));
-   return p?send(res,200,p):send(res,404,{error:'Product not found'});
+   const p=await getAliDetail(decodeURIComponent(u.pathname.split('/').pop()));
+   return send(res,200,p);
   }
   if(u.pathname==='/api/checkout'&&req.method==='POST'){
-   if(!process.env.STRIPE_SECRET_KEY)return send(res,503,{error:'Payments are not connected yet.'});
-   return send(res,503,{error:'Checkout will be enabled only after the supplier feed and fulfillment verification pass.'});
+   const body=await readBody(req);
+   return send(res,200,await createCheckout(body.items));
   }
+  if(u.pathname==='/api/policy/shipping')return send(res,200,{title:'Shipping & Delivery',body:'Tyrve currently launches to United States delivery addresses. Products are sourced after purchase from verified AliExpress listings. Delivery timing varies by item and destination. Tracking is provided when the supplier makes it available.'});
+  if(u.pathname==='/api/policy/returns')return send(res,200,{title:'Returns & Refunds',body:'If an item arrives damaged, materially different from the listing, or does not arrive, contact Tyrve support using the order details on your payment receipt. Eligible refunds are returned to the original payment method after review.'});
+  if(u.pathname==='/api/policy/privacy')return send(res,200,{title:'Privacy',body:'Tyrve collects only information needed to process orders and provide support. Payment data is handled by Stripe Checkout. Shipping details are used for order fulfillment. Tyrve does not sell customer personal data.'});
+  if(u.pathname==='/api/policy/terms')return send(res,200,{title:'Terms',body:'Product availability and supplier pricing are re-verified before checkout. Orders may be canceled and refunded if a supplier listing becomes unavailable before fulfillment. Tyrve may refuse restricted or high-risk merchandise.'});
   return send(res,404,{error:'Not found'});
  }catch(e){
-  const status=e.status||500;
-  send(res,status,{error:e.message||'Server error',code:e.code||'SERVER_ERROR'});
+  send(res,e.status||500,{error:e.message||'Server error',code:e.code||'SERVER_ERROR'});
  }
 });
-
-server.listen(PORT,'0.0.0.0',()=>console.log(`Tyrve real-supplier backend online on ${PORT}; CJ connected=${Boolean(CJ_API_KEY)}`));
+server.listen(PORT,'0.0.0.0',()=>console.log(`Tyrve AliExpress commerce online on ${PORT}; payments=${Boolean(STRIPE_SECRET_KEY)}`));
