@@ -13,6 +13,10 @@ jobs:
   launch:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 35]
     env:
       PROFIT_KEYSTORE: /home/runner/.android/profit-stable.keystore
     steps:
@@ -37,25 +41,19 @@ jobs:
       - name: Build candidate
         working-directory: profit-mobile/android
         run: gradle assembleDebug
-      - name: Launch on Android 15
+      - name: Launch and upgrade on Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: ${{ matrix.api }}
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: |
-            adb install -r profit-mobile/android/app/build/outputs/apk/debug/app-debug.apk
-            adb logcat -c
-            adb shell am start -W -n com.ainrox.profit.app/com.ainrox.profit.MainActivity
-            sleep 15
-            adb logcat -d > profit-launch-logcat.txt
-            adb shell pidof com.ainrox.profit.app
+          script: bash tests/profit-android-upgrade-smoke.sh
       - name: Upload diagnostics and candidate
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Profit-launch-diagnostics
+          name: Profit-upgrade-API-${{ matrix.api }}
           path: |
-            profit-launch-logcat.txt
+            android-test-results/
             profit-mobile/android/app/build/outputs/apk/debug/app-debug.apk

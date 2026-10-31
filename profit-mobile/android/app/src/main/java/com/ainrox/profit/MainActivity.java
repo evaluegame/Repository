@@ -51,7 +51,6 @@ public class MainActivity extends Activity {
         }
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
-        enterImmersiveMode();
 
         webView = new WebView(this);
         webView.setFitsSystemWindows(false);
@@ -62,6 +61,7 @@ public class MainActivity extends Activity {
         webView.setPadding(0, 0, 0, 0);
         webView.setBackgroundColor(Color.rgb(246, 246, 244));
         setContentView(webView);
+        enterImmersiveMode();
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -72,7 +72,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " ProfitNative/1.5");
+        settings.setUserAgentString(settings.getUserAgentString() + " ProfitNative/1.6.2");
 
         webView.addJavascriptInterface(new ProfitBridge(), "AndroidProfit");
         webView.setWebViewClient(new WebViewClient() {
@@ -125,6 +125,9 @@ public class MainActivity extends Activity {
     }
 
     private void enterImmersiveMode() {
+        // PhoneWindow.getInsetsController() dereferences its decor view.
+        // Create the decor before requesting fullscreen, including lifecycle callbacks.
+        View decorView = getWindow().getDecorView();
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -134,7 +137,7 @@ public class MainActivity extends Activity {
                 controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             }
         }
-        getWindow().getDecorView().setSystemUiVisibility(LEGACY_IMMERSIVE_FLAGS);
+        decorView.setSystemUiVisibility(LEGACY_IMMERSIVE_FLAGS);
         if (webView != null) webView.setSystemUiVisibility(LEGACY_IMMERSIVE_FLAGS);
     }
 
