@@ -1,1 +1,1 @@
-{"name":"tyrve-online-v2","version":"4.0.0","private":true,"type":"module","scripts":{"start":"node server-v4.js"},"engines":{"node":">=20"},"dependencies":{"@modelcontextprotocol/sdk":"^1.20.0"}}
+{"name":"tyrve-online-v2","version":"4.1.0","private":true,"type":"module","scripts":{"start":"node smoke-search.js && node server-v4.js"},"engines":{"node":">=20"},"dependencies":{"@modelcontextprotocol/sdk":"^1.20.0"}}
