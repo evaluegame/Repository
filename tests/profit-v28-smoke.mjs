@@ -10,7 +10,7 @@ const html=`<!doctype html><html><body>
 <div id="toast"></div>
 </body></html>`;
 
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.PROFIT_CHROME?{executablePath:process.env.PROFIT_CHROME}:{})});
 try{
   const page=await browser.newPage();
   page.setDefaultTimeout(7000);
@@ -39,8 +39,8 @@ try{
 
   const migrated=await page.evaluate(()=>JSON.parse(localStorage.getItem('profitFreedomGoal_v3')));
   assert.equal(migrated.basis,'assets','Freedom must always use investment/assets mode');
-  assert.equal(migrated.enabled,false,'Freedom must be hidden on v28 upgrade until user opts in');
-  assert.equal(await page.locator('#pf28FreedomCard').count(),0,'Freedom card should be hidden after migration');
+  assert.equal(migrated.enabled,true,'An update must preserve the user’s enabled Freedom preference');
+  assert.equal(await page.locator('#pf28FreedomCard').count(),1,'An enabled Freedom card should remain visible after migration');
   assert.equal(await page.locator('#pf27Section').evaluate(el=>getComputedStyle(el).display),'none','old passive Freedom settings should be hidden');
   assert.equal((await page.locator('#pf28FreedomSettings').innerText()).includes('Base freedom on passive income'),false,'Freedom settings must not contain passive-income mode');
 

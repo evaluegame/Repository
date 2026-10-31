@@ -4,7 +4,10 @@ name: Check Profit Web
 on:
   push:
     paths:
+      - 'v10-patch.js'
       - 'v21-cloud-auth.js'
+      - 'v31-reliability.js'
+      - 'tests/profit-v31-complete-flow.mjs'
       - 'v27-freedom-sync.js'
       - 'v28-freedom-passive.js'
       - 'v29-passive-rewards.js'
@@ -27,13 +30,23 @@ jobs:
         with:
           node-version: '22'
       - name: Check Profit JavaScript syntax
-        run: node --check v21-cloud-auth.js && node --check v27-freedom-sync.js && node --check v28-freedom-passive.js && node --check v29-passive-rewards.js && node --check v30-native-ui.js && node --check v13-install-roi.js && node --check tests/profit-v26-smoke.mjs && node --check tests/profit-v28-smoke.mjs && node --check tests/profit-v30-native-session-smoke.mjs
+        run: node --check v10-patch.js && node --check v31-reliability.js && node --check tests/profit-v31-complete-flow.mjs && node --check v21-cloud-auth.js && node --check v27-freedom-sync.js && node --check v28-freedom-passive.js && node --check v29-passive-rewards.js && node --check v30-native-ui.js && node --check v13-install-roi.js && node --check tests/profit-v26-smoke.mjs && node --check tests/profit-v28-smoke.mjs && node --check tests/profit-v30-native-session-smoke.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright
-          npx playwright install --with-deps chromium
+          google-chrome --version
       - name: Run Profit interaction smoke tests
+        env:
+          PROFIT_CHROME: /usr/bin/google-chrome
         run: |
           node tests/profit-v26-smoke.mjs
           node tests/profit-v28-smoke.mjs
           node tests/profit-v30-native-session-smoke.mjs
+          node tests/profit-v31-complete-flow.mjs
+
+      - name: Upload interaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Profit-full-flow-evidence
+          path: test-results/

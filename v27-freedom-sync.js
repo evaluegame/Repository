@@ -4,7 +4,7 @@ const API='https://profit-auth-api.onrender.com';
 const TOKEN='profit_cloud_token_v1';
 const GOAL='profitFreedomGoal_v3';
 const OLD_GOALS=['profitFreedomGoal_v2','profitFreedomGoal_v1'];
-const SYNC_KEYS=['profitEntries_v8','simpleProfit_v3','profitPrefs_v8','profitSettings_v1','profitRecurring_v1','profitExpenseScopeEntries_v1','profitExpenseScopeRules_v1','profitRewards_v1','profitOnboarded_v1',GOAL];
+const SYNC_KEYS=['profitEntries_v8','simpleProfit_v3','profitPrefs_v8','profitSettings_v1','profitRecurring_v1','profitExpenseScopeEntries_v1','profitExpenseScopeRules_v1','profitRewards_v1','profitOnboarded_v1','profitExperience_v31','profitDeletedEntries_v1','profitDeletedRules_v1',GOAL];
 const $=id=>document.getElementById(id);
 const readRaw=k=>{try{return localStorage.getItem(k)}catch{return null}};
 const writeRaw=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,String(v))}catch{}};
@@ -34,11 +34,11 @@ function money(v){const p=getPrefs();try{return new Intl.NumberFormat(p.lang==='
 function getEntries(){
   const modern=read('profitEntries_v8',[]);
   const legacy=read('simpleProfit_v3',[]);
-  if(Array.isArray(modern)&&modern.length) return modern;
+  if(readRaw('profitEntries_v8')!==null&&Array.isArray(modern)) return modern;
   if(Array.isArray(legacy)&&legacy.length){writeRaw('profitEntries_v8',encode(legacy));return legacy}
   return [];
 }
-function entryKey(x,index){return x&&x.id!=null?`id:${x.id}`:`row:${JSON.stringify(x)}:${index}`}
+function entryKey(x,index){return x&&x.id!=null?`id:${x.id}`:`row:${JSON.stringify(x)}`}
 function unionArrays(a,b){const out=[],seen=new Set();[...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])].forEach((x,i)=>{const k=entryKey(x,i);if(!seen.has(k)){seen.add(k);out.push(x)}});return out}
 function mergeObjects(local,remote){return {...(remote&&typeof remote==='object'&&!Array.isArray(remote)?remote:{}),...(local&&typeof local==='object'&&!Array.isArray(local)?local:{})}}
 function localState(){
@@ -53,11 +53,15 @@ function stateEntries(s){return unionArrays(parse(s?.profitEntries_v8,[]),parse(
 function countEntries(s){return stateEntries(s).length}
 function mergeStates(local,cloud){
   local=local||{};cloud=cloud||{};
-  const out={...cloud,...local};
+  const out={...cloud,...Object.fromEntries(Object.entries(local).filter(([,v])=>v!=null))};
   const entries=unionArrays(stateEntries(local),stateEntries(cloud));
-  out.profitEntries_v8=encode(entries);
-  out.simpleProfit_v3=encode(entries);
-  out.profitRecurring_v1=encode(unionArrays(parse(local.profitRecurring_v1,[]),parse(cloud.profitRecurring_v1,[])));
+  const deletedEntries=mergeObjects(parse(local.profitDeletedEntries_v1,{}),parse(cloud.profitDeletedEntries_v1,{}));
+  const deletedRules=mergeObjects(parse(local.profitDeletedRules_v1,{}),parse(cloud.profitDeletedRules_v1,{}));
+  out.profitDeletedEntries_v1=encode(deletedEntries);out.profitDeletedRules_v1=encode(deletedRules);
+  const keptEntries=entries.filter(e=>!deletedEntries[e.id]);
+  out.profitEntries_v8=encode(keptEntries);
+  out.simpleProfit_v3=encode(keptEntries);
+  out.profitRecurring_v1=encode(unionArrays(parse(local.profitRecurring_v1,[]),parse(cloud.profitRecurring_v1,[])).filter(r=>!deletedRules[r.id]));
   for(const k of ['profitExpenseScopeEntries_v1','profitExpenseScopeRules_v1','profitRewards_v1'])out[k]=encode(mergeObjects(parse(local[k],{}),parse(cloud[k],{})));
   const lg=parse(local[GOAL],{}),cg=parse(cloud[GOAL],{});
   out[GOAL]=encode((Number(lg.updatedAt)||0)>=(Number(cg.updatedAt)||0)?{...defaultGoal(),...cg,...lg}:{...defaultGoal(),...lg,...cg});
@@ -65,34 +69,45 @@ function mergeStates(local,cloud){
 }
 function applyState(s){
   if(!s||typeof s!=='object')return;
+  const applying=window.__profitSyncApplying;window.__profitSyncApplying=true;try{
   for(const k of SYNC_KEYS){if(Object.prototype.hasOwnProperty.call(s,k)&&s[k]!=null)writeRaw(k,typeof s[k]==='string'?s[k]:encode(s[k]))}
   const entries=stateEntries(s);
   if(entries.length){writeRaw('profitEntries_v8',encode(entries));writeRaw('simpleProfit_v3',encode(entries))}
+  }finally{window.__profitSyncApplying=applying}
 }
 async function cloud(path,options={}){
   const token=readRaw(TOKEN);if(!token)throw new Error('Sign in first');
-  const res=await fetch(API+path,{...options,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,...(options.headers||{})}});
+  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),45000);let res;
+  try{res=await fetch(API+path,{...options,signal:abort.signal,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,...(options.headers||{})}})}finally{clearTimeout(timer)}
   let body={};try{body=await res.json()}catch{}
-  if(!res.ok)throw new Error(body.error||'Cloud unavailable');
+  if(!res.ok){const e=new Error((res.status===401||res.status===403)?'Reconnect your account to sync. Your device progress is safe.':body.error||'Cloud unavailable');e.status=res.status;throw e}
   return body;
 }
 async function getCloud(){return (await cloud('/data')).data||{}}
 async function putCloud(s){await cloud('/data',{method:'POST',body:JSON.stringify({data:s})})}
 function setStatus(text,ok=true){const el=$('pf27SyncStatus');if(el){el.textContent=text;el.dataset.ok=ok?'1':'0'}}
-async function uploadDevice(){
-  setStatus('Uploading…');
-  try{const s=localState();await putCloud(s);setStatus(`Uploaded ${countEntries(s)} entries ✓`);showToast('Device progress uploaded');return true}
-  catch(e){setStatus(e.message||'Upload failed',false);return false}
+function checkpoint(label){
+ try{const state=localState();if(!countEntries(state))return;
+ const history=read('profitRecoverySnapshots_v1',[]),last=history[0];
+ if(last&&JSON.stringify(last.state)===JSON.stringify(state))return;
+ history.unshift({at:Date.now(),label,state});writeRaw('profitRecoverySnapshots_v1',encode(history.slice(0,6)));
+ }catch{}
 }
-async function restoreCloud(){
-  setStatus('Restoring…');
-  try{const s=await getCloud();const n=countEntries(s);if(!n){setStatus('Cloud has no entries',false);return false}applyState(s);setStatus(`Restored ${n} entries ✓`);showToast('Cloud progress restored');setTimeout(()=>location.reload(),300);return true}
-  catch(e){setStatus(e.message||'Restore failed',false);return false}
-}
+async function uploadDevice(){return mergeSafe(false)}
+async function restoreCloud(){return mergeSafe(true)}
 async function mergeSafe(reload=true){
-  setStatus('Merging safely…');
-  try{const merged=mergeStates(localState(),await getCloud());applyState(merged);await putCloud(merged);const n=countEntries(merged);setStatus(`Synced ${n} entries ✓`);showToast('Progress safely merged');if(reload)setTimeout(()=>location.reload(),300);return true}
-  catch(e){setStatus(e.message||'Sync failed',false);return false}
+ setStatus('Syncing and checking cloud progress…');
+ try{
+  // Read local state after the network request so edits made while waiting survive.
+  const remote=await getCloud(),local=localState(),merged=mergeStates(local,remote);
+  const changed=JSON.stringify(local)!==JSON.stringify(merged);
+  if(changed){checkpoint('Before cloud merge');applyState(merged)}
+  await putCloud(merged);const n=countEntries(merged);
+  setStatus(`Synced ${n} entries ✓`);window.__profitLastSync=Date.now();
+  window.dispatchEvent(new CustomEvent('profit:synced',{detail:{entries:n,changed}}));
+  if(reload&&changed)setTimeout(()=>location.reload(),300);
+  return true;
+ }catch(e){setStatus(e.message||'Sync failed. Device progress is safe.',false);window.__profitLastSyncError=e.message;return false}
 }
 
 function assetMonths(g){
@@ -132,7 +147,7 @@ function addStyles(){if($('pf27Style'))return;const s=document.createElement('st
 .pf27-section{margin:16px 0;padding:16px;border:1px solid #e2e4df;border-radius:20px;background:#f7f8f5}.pf27-section h3{margin:0 0 5px;font-size:18px}.pf27-section>p{margin:0 0 13px;color:#777;font-size:12px;line-height:1.4}.pf27-toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #e4e6e1}.pf27-toggle b{font-size:13px}.pf27-toggle small{display:block;color:#888;margin-top:2px}.pf27-toggle input{width:22px;height:22px;accent-color:#111}.pf27-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.pf27-field label{display:block;margin:0 0 5px;font-size:9px;font-weight:900;color:#777;text-transform:uppercase}.pf27-field input{width:100%;box-sizing:border-box;border:1px solid #dcdeda;border-radius:12px;background:#fff;padding:11px;font-size:16px;font-weight:800}.pf27-save{width:100%;margin-top:11px;border:0;border-radius:13px;padding:12px;background:#111;color:#fff;font-weight:900}.pf27-sync-title{margin-top:18px;font-size:13px;font-weight:900}.pf27-sync-help{margin:4px 0 8px;color:#777;font-size:11px;line-height:1.4}.pf27-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pf27-actions button{border:1px solid #dde0dc;border-radius:12px;padding:11px;background:#fff;color:#111;font-weight:900}.pf27-actions .merge{grid-column:1/-1;background:#111;color:#fff;border-color:#111}.pf27-status{margin-top:9px;padding:9px 10px;border-radius:11px;background:#eef8f2;color:#15744f;font-size:11px;font-weight:800}.pf27-status[data-ok="0"]{background:#fff0f0;color:#b22f2f}.pf27-freedom{margin:14px 0;padding:15px;border:1px solid #e2e5e1;border-radius:21px;background:#fff;box-shadow:0 8px 24px #0000000a}.pf27-head{display:flex;justify-content:space-between;align-items:flex-start}.pf27-head b{font-size:18px}.pf27-head small{display:block;color:#888;margin-top:2px}.pf27-head>strong{font-size:24px;color:#0b9d67}.pf27-bar{height:8px;margin:11px 0;background:#e8ebe8;border-radius:99px;overflow:hidden}.pf27-bar i{display:block;height:100%;background:#10a66d;border-radius:99px}.pf27-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.pf27-stats span,.pf27-dates span{padding:8px;border-radius:12px;background:#f5f6f4}.pf27-stats small,.pf27-dates small{display:block;color:#858886;font-size:8px;text-transform:uppercase;font-weight:900}.pf27-stats b,.pf27-dates b{display:block;margin-top:3px;font-size:12px}.pf27-dates{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}.pf27-dates span{background:#111;color:#fff}.pf27-dates small{color:#aeb4b0}@media(max-width:390px){.pf27-grid{grid-template-columns:1fr}.pf27-stats{grid-template-columns:1fr 1fr}.pf27-stats span:last-child{grid-column:1/-1}}
 `;document.head.appendChild(s)}
 function showToast(text){const e=$('toast');if(!e)return;e.textContent=text;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1700)}
-function settingsHost(){return document.querySelector('#settingsModal .modal')||document.querySelector('#settingsModal .box')||$('#settingsModal')}
+function settingsHost(){return document.querySelector('#modal .box')||document.querySelector('#settingsModal .modal')||document.querySelector('#settingsModal .box')||$('#settingsModal')}
 function injectSettings(){
   const host=settingsHost();if(!host||$('pf27Section'))return;
   const g=getGoal(),section=document.createElement('section');section.id='pf27Section';section.className='pf27-section';
@@ -150,11 +165,11 @@ function bindControls(){
   },true);
 }
 function enhanceBackup(){
-  const exp=$('exportBtn'),imp=$('importBtn');
+  const exp=$('exbtn')||$('exportBtn'),imp=$('imbtn')||$('importBtn');
   if(exp&&!exp.dataset.pf27){exp.dataset.pf27='1';exp.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();const data=JSON.stringify({format:'profit-backup-v27',exportedAt:new Date().toISOString(),state:localState()},null,2),name=`profit-backup-${nowDate()}.json`;try{if(window.AndroidProfit?.exportBackup){window.AndroidProfit.exportBackup(data,name);showToast('Choose where to save');return}}catch{}const blob=new Blob([data],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();const u=a.href;a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)},true)}
-  if(imp&&!imp.dataset.pf27){imp.dataset.pf27='1';let file=$('pf27ImportFile');if(!file){file=document.createElement('input');file.id='pf27ImportFile';file.type='file';file.accept='.json,application/json';file.hidden=true;document.body.appendChild(file);file.addEventListener('change',async()=>{try{const f=file.files?.[0];if(!f)return;const data=JSON.parse(await f.text()),s=data.state||data;if(!s||typeof s!=='object')throw new Error();applyState(s);showToast('Backup restored');setTimeout(()=>location.reload(),250)}catch{showToast('Invalid backup')}finally{file.value=''}})}imp.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();file.click()},true)}
+  if(imp&&!imp.dataset.pf27){imp.dataset.pf27='1';let file=$('pf27ImportFile');if(!file){file=document.createElement('input');file.id='pf27ImportFile';file.type='file';file.accept='.json,application/json';file.hidden=true;document.body.appendChild(file);file.addEventListener('change',async()=>{try{const f=file.files?.[0];if(!f)return;const data=JSON.parse(await f.text());let s=data.state||data;if(Array.isArray(data.entries))s={profitEntries_v8:encode(data.entries),profitPrefs_v8:encode(data.prefs||{}),profitRecurring_v1:encode(data.recurring||[]),profitRewards_v1:encode(data.unlocked||{})};if(!s||typeof s!=='object'||(!countEntries(s)&&!s.profitPrefs_v8))throw new Error();checkpoint('Before backup import');applyState(mergeStates(localState(),s));showToast('Backup restored');setTimeout(()=>location.reload(),250)}catch{showToast('Invalid backup')}finally{file.value=''}})}imp.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();file.click()},true)}
 }
 function boot(){migrateGoal();getEntries();addStyles();injectSettings();renderFreedom();enhanceBackup();bindControls()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,60),{once:true});else setTimeout(boot,60);
-window.__profitV27={getGoal,setGoal,localState,countEntries,mergeStates,uploadDevice,restoreCloud,mergeSafe,renderFreedom};
+window.__profitV27={getGoal,setGoal,localState,countEntries,mergeStates,uploadDevice,restoreCloud,mergeSafe,renderFreedom,applyState,checkpoint};
 })();

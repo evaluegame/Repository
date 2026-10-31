@@ -13,7 +13,7 @@ adb shell run-as "$PACKAGE" touch files/profit-upgrade-preserve-check
 adb install --no-incremental -r "$APK"
 adb shell run-as "$PACKAGE" ls files/profit-upgrade-preserve-check
 adb shell dumpsys package "$PACKAGE" > android-test-results/package.txt
-grep -q 'versionName=1.6.2' android-test-results/package.txt
+grep -q 'versionName=1.6.3' android-test-results/package.txt
 
 adb logcat -c
 adb shell am start -W -n "$PACKAGE/$ACTIVITY"

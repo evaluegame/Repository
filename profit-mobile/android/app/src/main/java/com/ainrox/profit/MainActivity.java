@@ -3,6 +3,15 @@ package com.ainrox.profit;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.view.Gravity;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Button;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceError;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,6 +33,11 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private LinearLayout loadingPanel;
+    private TextView loadingText;
+    private ProgressBar loadingSpinner;
+    private Button retryButton;
+    private boolean mainLoadFailed;
     private ValueCallback<Uri[]> filePathCallback;
     private String pendingExportJson;
     private static final int REQ_IMPORT = 1001;
@@ -60,7 +74,28 @@ public class MainActivity extends Activity {
         webView.setHorizontalScrollBarEnabled(false);
         webView.setPadding(0, 0, 0, 0);
         webView.setBackgroundColor(Color.rgb(246, 246, 244));
-        setContentView(webView);
+        FrameLayout root = new FrameLayout(this);
+        root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
+        loadingPanel = new LinearLayout(this);
+        loadingPanel.setOrientation(LinearLayout.VERTICAL);
+        loadingPanel.setGravity(Gravity.CENTER);
+        loadingPanel.setPadding(36, 36, 36, 36);
+        loadingPanel.setBackgroundColor(Color.rgb(246, 246, 244));
+        loadingSpinner = new ProgressBar(this);
+        loadingPanel.addView(loadingSpinner);
+        loadingText = new TextView(this);
+        loadingText.setText("Loading Profit…");
+        loadingText.setTextSize(18);
+        loadingText.setGravity(Gravity.CENTER);
+        loadingText.setPadding(0, 24, 0, 24);
+        loadingPanel.addView(loadingText);
+        retryButton = new Button(this);
+        retryButton.setText("Try again");
+        retryButton.setVisibility(View.GONE);
+        retryButton.setOnClickListener(v -> webView.loadUrl(APP_URL));
+        loadingPanel.addView(retryButton);
+        root.addView(loadingPanel, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(root);
         enterImmersiveMode();
 
         WebSettings settings = webView.getSettings();
@@ -72,13 +107,31 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " ProfitNative/1.6.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " ProfitNative/1.6.3");
 
         webView.addJavascriptInterface(new ProfitBridge(), "AndroidProfit");
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                mainLoadFailed = false;
+                loadingText.setText("Loading Profit…");
+                loadingSpinner.setVisibility(View.VISIBLE);
+                retryButton.setVisibility(View.GONE);
+                loadingPanel.setVisibility(View.VISIBLE);
+            }
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (!request.isForMainFrame()) return;
+                mainLoadFailed = true;
+                loadingText.setText("Profit could not connect. Your saved records are still on this device. Check your connection and try again.");
+                loadingSpinner.setVisibility(View.GONE);
+                retryButton.setVisibility(View.VISIBLE);
+                loadingPanel.setVisibility(View.VISIBLE);
+            }
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                if (!mainLoadFailed) loadingPanel.setVisibility(View.GONE);
                 view.evaluateJavascript(
                     "window.__PROFIT_NATIVE_APP__=true;" +
                     "document.documentElement.classList.add('profit-native');" +
@@ -154,6 +207,20 @@ public class MainActivity extends Activity {
     }
 
     public class ProfitBridge {
+        @JavascriptInterface
+        public boolean hasPreviousProfit() {
+            return getPackageManager().getLaunchIntentForPackage("com.ainrox.profit") != null;
+        }
+
+        @JavascriptInterface
+        public void openPreviousProfit() {
+            runOnUiThread(() -> {
+                Intent previous = getPackageManager().getLaunchIntentForPackage("com.ainrox.profit");
+                if (previous != null) startActivity(previous);
+                else Toast.makeText(MainActivity.this, "Previous Profit installation was not found", Toast.LENGTH_LONG).show();
+            });
+        }
+
         @JavascriptInterface
         public void exportBackup(String json, String filename) {
             runOnUiThread(() -> {
