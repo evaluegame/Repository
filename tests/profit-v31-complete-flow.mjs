@@ -47,21 +47,34 @@ try{
  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('profitEntries_v8')||'[]').length===2);
  await page.waitForFunction(()=>window.__profitReliability&&document.querySelector('#gear'));
  await page.waitForFunction(()=>document.querySelector('#hist')?.textContent.includes('cloud-progress'));
+ assert.equal(await page.locator('#profitQuickSync').count(),0,'sync belongs in Settings');
+ assert.equal(await page.locator('#profitDashboardSync').count(),0,'dashboard should not show a sync banner');
  await page.locator('#gear').click();
  await page.locator('#profitSyncNow').waitFor({state:'visible'});
+ assert.equal(await page.locator('#profitOpenPrevious').count(),0,'remove previous-app control');
+ assert.equal(await page.locator('#pf28Upload,#pf28Restore,#pf28Merge').count(),0,'only one sync section');
  assert.equal(await page.locator('#pf28Enabled').count(),1);
  assert.equal(await page.locator('#install').evaluate(el=>getComputedStyle(el).display),'none');
  assert.equal(await page.locator('#profitFreedomPopup').count(),0,'optional popup is off by default');
  await page.locator('#pf28Enabled').check();await page.locator('#pf28Target').fill('1000');await page.locator('#pf28Invested').fill('500');await page.locator('#pf28Save').click();
  await page.locator('#pf28FreedomCard').waitFor({state:'attached'});
  assert.match(await page.locator('#pf28FreedomCard').textContent(),/50%/);
- await page.locator('#profitFreedomPopupSetting').check();await page.reload();
+ await page.locator('#profitFreedomPopupSetting').check();
  await page.locator('#profitFreedomPopup').waitFor({state:'visible'});
- assert.match(await page.locator('#profitFreedomSummary').textContent(),/50.0%/);
+ assert.match(await page.locator('#profitFreedomTarget').textContent(),/1,000/,'popup shows saved target immediately');
+ assert.match(await page.locator('#profitFreedomPercent').textContent(),/50.0%/);
+ await fs.mkdir('test-results',{recursive:true});await page.screenshot({path:'test-results/profit-freedom-popup.png'});
+ await page.locator('#profitPopupClose').click();await page.reload();
+ await page.locator('#profitFreedomPopup').waitFor({state:'visible'});
+ assert.match(await page.locator('#profitFreedomPercent').textContent(),/50.0%/);
  await page.locator('#profitPopupEnabled').uncheck();await page.locator('#profitPopupClose').click();
  await page.reload();await page.waitForFunction(()=>window.__profitReliability);
  assert.equal(await page.locator('#profitAuthRoot').count(),0);assert.equal(await page.locator('#profitFreedomPopup').count(),0);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('profitEntries_v8')).length),2);
+ await page.locator('#gear').click();await page.locator('#pf28Enabled').uncheck();
+ assert.equal(await page.locator('#pf28FreedomCard').count(),0,'turning the dashboard goal off takes effect immediately');
+ await page.locator('#pf28Enabled').check();await page.locator('#pf28FreedomCard').waitFor({state:'attached'});
+ await page.locator('#close').click();
  // An outage and an expired cloud session must not erase the account mapping or local progress.
  for(const code of [500,401]){
   meStatus=code;await page.reload();await page.waitForFunction(()=>window.__profitReliability);
@@ -87,7 +100,7 @@ try{
  await page.locator('#paLoginEmail').fill(users.b.email);await page.locator('#paLoginPassword').fill('correct-password');await page.locator('#paLogin button[type=submit]').click();
  await page.waitForFunction(()=>window.__profitReliability&&JSON.parse(localStorage.getItem('profitEntries_v8')||'[]').length===1);
  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('profitEntries_v8')).map(e=>e.id)),['bob-only']);
- await fs.mkdir('test-results',{recursive:true});await page.locator('#gear').click();await page.screenshot({path:'test-results/profit-v31-settings.png',fullPage:true});
+ await fs.mkdir('test-results',{recursive:true});await page.locator('#gear').click();await page.screenshot({path:'test-results/profit-v31-settings.png'});
  assert.deepEqual(errors,[],'full startup should have no uncaught JavaScript errors');
  assert.equal(loginCount,3,'reopening or network failures must not require another login');
  console.log('PASS: real login bootstrap, late login, loading/errors, cloud restore/merge, automatic sync, deletion, persisted session, expired-session recovery, optional popup and account isolation');
