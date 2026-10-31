@@ -2,8 +2,10 @@ name: Build Profit Android APK
 
 on:
   push:
+    branches: ['main']
     paths:
       - 'profit-mobile/android/**'
+      - 'tests/profit-android-upgrade-smoke.sh'
       - '.github/workflows/build-profit-apk.yml'
   workflow_dispatch:
 
@@ -24,24 +26,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Restore stable Profit signing key
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: /home/runner/.android/profit-stable.keystore
           key: profit-android-stable-signing-v2
+          fail-on-cache-miss: true
       - name: Ensure stable Profit signing key exists
         run: |
           mkdir -p /home/runner/.android
-          if [ ! -f "$PROFIT_KEYSTORE" ]; then
-            keytool -genkeypair -v \
-              -keystore "$PROFIT_KEYSTORE" \
-              -storepass android \
-              -alias profit \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Profit Android,O=AINROX,C=US"
-          fi
+          test -f "$PROFIT_KEYSTORE" || { echo "Stable signing key missing; refusing to rotate the installed app signing key."; exit 1; }
           keytool -list -v -keystore "$PROFIT_KEYSTORE" -storepass android -alias profit | grep -E 'SHA256:|SHA1:'
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -63,6 +56,25 @@ jobs:
           "$BT/aapt2" dump badging Profit-Android.apk
           "$BT/apksigner" verify --verbose --print-certs Profit-Android.apk
           echo "Validated APK bytes: $(wc -c < Profit-Android.apk)"
+      - name: Enable KVM for launch regression test
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify signed upgrade and Android 15 launch before publishing
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash tests/profit-android-upgrade-smoke.sh
+      - name: Upload launch diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Profit-Android-launch-diagnostics
+          path: android-test-results/
       - uses: actions/upload-artifact@v4
         with:
           name: Profit-Android-APK
