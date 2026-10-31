@@ -1,6 +1,7 @@
 const http=require('http');
 const fs=require('fs');
 const path=require('path');
+const zlib=require('zlib');
 const {URL}=require('url');
 const originalCreateServer=http.createServer.bind(http);
 const legalPages={
@@ -24,6 +25,18 @@ http.createServer=function(listener){
           'x-aipost-tiktok-verification':'true'
         });
         if(req.method==='HEAD')return res.end();
+        return res.end(body);
+      }
+      if(req.method==='GET'&&u.pathname==='/__debug/direct-ui-source'){
+        const raw=fs.readFileSync(path.join(__dirname,'direct-ui-v10.js'),'utf8');
+        const m=raw.match(/const b64='([^']+)'/s);
+        if(!m){res.writeHead(404);return res.end('missing payload')}
+        const body=zlib.gunzipSync(Buffer.from(m[1],'base64'));
+        res.writeHead(200,{
+          'content-type':'text/plain; charset=utf-8',
+          'content-length':body.length,
+          'cache-control':'no-store'
+        });
         return res.end(body);
       }
       const file=legalPages[u.pathname];
