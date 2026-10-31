@@ -19,7 +19,7 @@ async function prep(page){
 }
 let browser;
 try{
-  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.PROFIT_CHROME?{executablePath:process.env.PROFIT_CHROME}:{})});
   const ctx=await browser.newContext({timezoneId:'Asia/Bangkok',acceptDownloads:true});const page=await ctx.newPage();await prep(page);mark('boot');
   assert.equal(await page.locator('#pf27FreedomCard').count(),0);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('profitEntries_v8')||'[]').length),1);mark('hidden-default');
   await page.check('#pf27Enabled');await page.fill('#pf27Target','1000000');await page.fill('#pf27Invested','250000');await page.fill('#pf27Monthly','5000');await page.fill('#pf27Return','7');await page.click('#pf27Save');await page.waitForSelector('#pf27FreedomCard');

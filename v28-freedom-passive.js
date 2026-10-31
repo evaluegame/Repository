@@ -16,11 +16,11 @@ function goal(){return {...defaultGoal(),...read(GOAL,{})}}
 function migrate(){
   const g=goal();
   if(!read(MIG,false)){
-    write(GOAL,{...g,enabled:false,basis:'assets',updatedAt:Date.now()});
+    write(GOAL,{...g,basis:'assets'});
     write(MIG,true);
   }else if(g.basis!=='assets') write(GOAL,{...g,basis:'assets',updatedAt:Date.now()});
 }
-function saveGoal(g){write(GOAL,{...defaultGoal(),...g,basis:'assets',updatedAt:Date.now()});renderFreedom()}
+function saveGoal(g){write(GOAL,{...defaultGoal(),...goal(),...g,basis:'assets',updatedAt:Date.now()});renderFreedom()}
 function assetMonths(g){
   const target=Math.max(0,+g.target||0),start=Math.max(0,+g.invested||0),monthly=Math.max(0,+g.monthlyContribution||0),r=Math.max(0,+g.annualReturn||0)/1200;
   if(!target)return Infinity;if(start>=target)return 0;if(!r)return monthly>0?Math.ceil((target-start)/monthly):Infinity;if(start<=0&&monthly<=0)return Infinity;

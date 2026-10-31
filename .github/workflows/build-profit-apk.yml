@@ -1,23 +1,23 @@
-name: Build Profit Android APK
+name: Verify Profit Android launch
 
 on:
   push:
-    branches: ['main']
-    paths:
-      - 'profit-mobile/android/**'
-      - 'tests/profit-android-upgrade-smoke.sh'
-      - '.github/workflows/build-profit-apk.yml'
+    branches: ['fix/profit-sync-session']
+    paths: ['profit-mobile/android/**', '.github/workflows/build-profit-apk.yml']
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build:
+  launch:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 35]
     env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       PROFIT_KEYSTORE: /home/runner/.android/profit-stable.keystore
     steps:
       - uses: actions/checkout@v4
@@ -25,84 +25,35 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Restore stable Profit signing key
-        uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v4
         with:
           path: /home/runner/.android/profit-stable.keystore
           key: profit-android-stable-signing-v2
           fail-on-cache-miss: true
-      - name: Ensure stable Profit signing key exists
-        run: |
-          mkdir -p /home/runner/.android
-          test -f "$PROFIT_KEYSTORE" || { echo "Stable signing key missing; refusing to rotate the installed app signing key."; exit 1; }
-          keytool -list -v -keystore "$PROFIT_KEYSTORE" -storepass android -alias profit | grep -E 'SHA256:|SHA1:'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Install Android SDK
-        run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-      - name: Build APK
-        working-directory: profit-mobile/android
-        run: gradle clean assembleDebug --stacktrace
-      - name: Prepare APK
-        run: cp profit-mobile/android/app/build/outputs/apk/debug/app-debug.apk Profit-Android.apk
-      - name: Validate APK package, manifest and signatures
-        run: |
-          BT="$ANDROID_HOME/build-tools/35.0.0"
-          "$BT/zipalign" -c -v 4 Profit-Android.apk
-          "$BT/aapt2" dump badging Profit-Android.apk
-          "$BT/apksigner" verify --verbose --print-certs Profit-Android.apk
-          echo "Validated APK bytes: $(wc -c < Profit-Android.apk)"
-      - name: Enable KVM for launch regression test
+      - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify signed upgrade and Android 15 launch before publishing
+      - name: Build candidate
+        working-directory: profit-mobile/android
+        run: gradle assembleDebug
+      - name: Launch and upgrade on Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: ${{ matrix.api }}
           arch: x86_64
           target: google_apis
           disable-animations: true
           script: bash tests/profit-android-upgrade-smoke.sh
-      - name: Upload launch diagnostics
+      - name: Upload diagnostics and candidate
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Profit-Android-launch-diagnostics
-          path: android-test-results/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Profit-Android-APK
-          path: Profit-Android.apk
-      - name: Generate exact website APK payload
-        run: |
-          mkdir -p freedom-fighter-site/downloads
-          cp Profit-Android.apk freedom-fighter-site/downloads/Profit-Android.apk
-          B64="$(base64 -w0 Profit-Android.apk)"
-          printf 'window.PROFIT_APK_B64="%s";window.PROFIT_APK_SIZE=%s;\n' "$B64" "$(wc -c < Profit-Android.apk)" > freedom-fighter-site/apk-data.js
-          echo "APK bytes: $(wc -c < Profit-Android.apk)"
-      - name: Publish exact validated APK and payload
-        run: |
-          mkdir -p /tmp/profit-apk-publish
-          cp freedom-fighter-site/downloads/Profit-Android.apk /tmp/profit-apk-publish/Profit-Android.apk
-          cp freedom-fighter-site/apk-data.js /tmp/profit-apk-publish/apk-data.js
-          git reset --hard HEAD
-          git fetch origin main
-          git rebase origin/main
-          mkdir -p freedom-fighter-site/downloads
-          cp /tmp/profit-apk-publish/Profit-Android.apk freedom-fighter-site/downloads/Profit-Android.apk
-          cp /tmp/profit-apk-publish/apk-data.js freedom-fighter-site/apk-data.js
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add freedom-fighter-site/downloads/Profit-Android.apk freedom-fighter-site/apk-data.js
-          if git diff --cached --quiet; then
-            echo "Website APK already matches the validated APK."
-          else
-            git commit -m "Publish validated Profit Android APK [skip ci]"
-            git push origin HEAD:main
-          fi
+          name: Profit-upgrade-API-${{ matrix.api }}
+          path: |
+            android-test-results/
+            profit-mobile/android/app/build/outputs/apk/debug/app-debug.apk

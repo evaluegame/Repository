@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.PROFIT_CHROME?{executablePath:process.env.PROFIT_CHROME}:{})});
 try{
   {
     const page=await browser.newPage();
