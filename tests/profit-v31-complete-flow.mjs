@@ -46,6 +46,7 @@ try{
  await page.locator('#profitReliabilitySettings').waitFor({state:'attached'});
  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('profitEntries_v8')||'[]').length===2);
  await page.waitForFunction(()=>window.__profitReliability&&document.querySelector('#gear'));
+ await page.waitForFunction(()=>document.querySelector('#hist')?.textContent.includes('cloud-progress'));
  await page.locator('#gear').click();
  await page.locator('#profitSyncNow').waitFor({state:'visible'});
  assert.equal(await page.locator('#pf28Enabled').count(),1);

@@ -4,6 +4,7 @@ name: Check Profit Web
 on:
   push:
     paths:
+      - 'v10-patch.js'
       - 'v21-cloud-auth.js'
       - 'v31-reliability.js'
       - 'tests/profit-v31-complete-flow.mjs'
@@ -29,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Check Profit JavaScript syntax
-        run: node --check v31-reliability.js && node --check tests/profit-v31-complete-flow.mjs && node --check v21-cloud-auth.js && node --check v27-freedom-sync.js && node --check v28-freedom-passive.js && node --check v29-passive-rewards.js && node --check v30-native-ui.js && node --check v13-install-roi.js && node --check tests/profit-v26-smoke.mjs && node --check tests/profit-v28-smoke.mjs && node --check tests/profit-v30-native-session-smoke.mjs
+        run: node --check v10-patch.js && node --check v31-reliability.js && node --check tests/profit-v31-complete-flow.mjs && node --check v21-cloud-auth.js && node --check v27-freedom-sync.js && node --check v28-freedom-passive.js && node --check v29-passive-rewards.js && node --check v30-native-ui.js && node --check v13-install-roi.js && node --check tests/profit-v26-smoke.mjs && node --check tests/profit-v28-smoke.mjs && node --check tests/profit-v30-native-session-smoke.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright

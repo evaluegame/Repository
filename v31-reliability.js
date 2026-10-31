@@ -16,8 +16,9 @@ async function sync(manual=false){
   if(ok){status('Synced · '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
    const after=window.__profitV27.localState();
    if(before.profitEntries_v8!==after.profitEntries_v8||before.profitRecurring_v1!==after.profitRecurring_v1){
-    // The legacy dashboard keeps an in-memory ledger; reload only after new cloud rows arrive.
-    status('Progress restored · opening your dashboard…');setTimeout(()=>location.reload(),300);
+    // Rehydrate the in-memory ledger without interrupting a form or opening Settings.
+    window.__profitDashboard?.refresh();status('Progress restored and synced');
+    window.__profitV28?.renderFreedom();window.__profitV29?.render();
    }else{window.__profitV28?.renderFreedom();window.__profitV29?.render()}
    if(manual)announce('Progress synced safely');
   }else{const msg=window.__profitLastSyncError||'Could not sync. Your device progress is safe.';status(msg,true);if(manual)announce(msg)}
@@ -50,20 +51,20 @@ function settings(){
  const host=document.querySelector('#modal .box')||document.querySelector('#settingsModal .modal');if(!host||$('profitReliabilitySettings'))return;
  const sec=document.createElement('section');sec.id='profitReliabilitySettings';sec.className='pf28-section';
  sec.innerHTML='<h3>Account & sync</h3><p id="profitAccountEmail"></p><div role="status" aria-live="polite" id="profitCloudStatus" style="font-size:12px;padding:8px 0">Progress saved on this device</div><button id="profitSyncNow" type="button" class="btn dark">Sync now · merge safely</button><button id="profitReconnectButton" type="button" class="btn soft">Reconnect account</button><p style="font-size:11px">Sync keeps records from both devices. You stay signed in when the app closes or the connection drops.</p><h3 style="margin-top:18px">Financial freedom</h3><label class="pf28-toggle"><span><b>Show financial freedom popup</b><small>When the app opens · optional</small></span><input id="profitFreedomPopupSetting" type="checkbox"></label><button id="profitViewFreedom" type="button" class="btn soft">View financial freedom</button><h3 style="margin-top:18px">Recover earlier progress</h3><p>Missing records after an update? Sync first to recover this account’s cloud history. An older Profit installation may have separate device storage.</p><button id="profitOpenPrevious" type="button" class="btn soft" hidden>Open previous Profit app</button><p id="profitRecoveryHelp" style="font-size:11px">In the older app or browser, sign in to the same account and choose Sync now, or export a backup and import it here. Keep the older app installed until your records are recovered.</p><label style="font-size:12px">Local recovery copies<select id="profitRecoveryCopies" style="width:100%;padding:10px;margin:8px 0"></select></label><button id="profitRecoverCopy" type="button" class="btn soft">Merge selected recovery copy</button><p style="font-size:11px">Recovery copies are created before cloud merges and backup imports. Recovering adds records without replacing your current history.</p><button id="profitExplicitLogout" type="button" class="btn soft">Log out</button>';
- const anchor=host.querySelector('.auto,.auto-section');anchor?anchor.before(sec):host.appendChild(sec);$('profitAccountEmail').textContent=user().email||'Saved account';
+ const anchor=host.querySelector('.auto,.auto-section');anchor?anchor.before(sec):host.appendChild(sec);$('profitAccountEmail').textContent=user().email||'Saved account';const version=document.createElement('p');version.style.cssText='font-size:11px;color:#888';version.textContent='Profit '+((navigator.userAgent.match(/ProfitNative\/([\d.]+)/)||[])[1]||'web · latest');sec.appendChild(version);
  $('profitSyncNow').onclick=()=>sync(true);$('profitReconnectButton').onclick=reconnect;
  $('profitFreedomPopupSetting').checked=prefs().freedomPopup;$('profitFreedomPopupSetting').onchange=e=>localStorage.setItem(PREF,JSON.stringify({...prefs(),freedomPopup:e.target.checked}));$('profitViewFreedom').onclick=popup;
  if(window.AndroidProfit?.hasPreviousProfit?.()){const b=$('profitOpenPrevious');b.hidden=false;b.onclick=()=>window.AndroidProfit.openPreviousProfit()}
  const copies=read('profitRecoverySnapshots_v1',[]),select=$('profitRecoveryCopies');
  if(!copies.length){select.add(new Option('No recovery copies yet',''));$('profitRecoverCopy').disabled=true}
  copies.forEach((x,i)=>select.add(new Option(`${new Date(x.at).toLocaleString()} · ${window.__profitV27.countEntries(x.state)} records`,String(i))));
- $('profitRecoverCopy').onclick=()=>{const copy=copies[Number(select.value)];if(!copy)return;window.__profitV27.checkpoint('Before recovery');window.__profitV27.applyState(window.__profitV27.mergeStates(window.__profitV27.localState(),copy.state));location.reload()};
+ $('profitRecoverCopy').onclick=()=>{const copy=copies[Number(select.value)];if(!copy)return;window.__profitV27.checkpoint('Before recovery');const current=window.__profitV27.localState(),deleted=read('profitDeletedEntries_v1',{});for(const row of JSON.parse(copy.state.profitEntries_v8||'[]'))delete deleted[row.id];current.profitDeletedEntries_v1=JSON.stringify(deleted);const recovery={...copy.state,profitDeletedEntries_v1:'{}'};window.__profitV27.applyState(window.__profitV27.mergeStates(current,recovery));location.reload()};
  $('profitExplicitLogout').onclick=()=>{if(!confirm('Log out of this account? Your saved records will stay on this device.'))return;const t=localStorage.getItem('profit_cloud_token_v1');if(t)fetch(API+'/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});for(const k of ['profit_cloud_token_v1','profit_cloud_user_v1','profit_cloud_storage_v1','profit_auth_session_v1'])localStorage.removeItem(k);location.reload()};
 }
 function boot(){
  if(started)return;started=true;settings();window.__profitV27.checkpoint('App opened');
  window.addEventListener('profit:datachanged',e=>{if(!['profitRecoverySnapshots_v1','profitFreedomV28Migrated_v1'].includes(e.detail?.key))schedule()});
- window.addEventListener('online',()=>sync(false));window.addEventListener('profit:cloudstatus',()=>{if(window.__profitCloudAuthRequired)status('Reconnect your account to sync. Local progress is safe.',true)});
+ window.addEventListener('online',()=>sync(false));window.addEventListener('focus',schedule);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});window.addEventListener('profit:cloudstatus',()=>{if(window.__profitCloudAuthRequired)status('Reconnect your account to sync. Local progress is safe.',true)});
  setInterval(()=>{if(!document.hidden)sync(false)},60000);
  if(prefs().freedomPopup)popup();sync(false);
  window.__profitReliability={sync,popup,reconnect};

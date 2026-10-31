@@ -34,7 +34,7 @@ function money(v){const p=getPrefs();try{return new Intl.NumberFormat(p.lang==='
 function getEntries(){
   const modern=read('profitEntries_v8',[]);
   const legacy=read('simpleProfit_v3',[]);
-  if(Array.isArray(modern)&&modern.length) return modern;
+  if(readRaw('profitEntries_v8')!==null&&Array.isArray(modern)) return modern;
   if(Array.isArray(legacy)&&legacy.length){writeRaw('profitEntries_v8',encode(legacy));return legacy}
   return [];
 }

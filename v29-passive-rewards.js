@@ -8,7 +8,7 @@ const money=v=>{const p=prefs();try{return new Intl.NumberFormat(p.lang==='th'?'
 const iso=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const shift=(s,n)=>{const [y,m,d]=s.split('-').map(Number),x=new Date(y,m-1,d);x.setDate(x.getDate()+n);return iso(x)};
 const dim=m=>{const [y,mo]=m.split('-').map(Number);return new Date(y,mo,0).getDate()};
-function entries(){const modern=read(E,null),legacy=read(LEGACY,[]);return Array.isArray(modern)&&modern.length?modern:(Array.isArray(legacy)?legacy:[])}
+function entries(){const modern=read(E,null),legacy=read(LEGACY,[]);return Array.isArray(modern)?modern:(Array.isArray(legacy)?legacy:[])}
 function rules(){const x=read(R,[]);return Array.isArray(x)?x:[]}
 function activeRule(r,d){return r&&r.enabled!==false&&(!r.startDate||d>=r.startDate)&&(!r.endDate||d<=r.endDate)}
 function passiveForDay(d){const month=d.slice(0,7),days=dim(month);let total=0;for(const e of entries()){if(e?.incomeType!=='passive')continue;if((e.mode||'daily')==='daily'&&e.date===d)total+=Number(e.revenue)||0;else if(e.mode==='monthly'&&e.month===month)total+=(Number(e.revenue)||0)/days}for(const r of rules()){if(r?.type!=='passive'||!activeRule(r,d))continue;const amount=Number(r.amount)||0;if(r.frequency==='daily')total+=amount;else if(r.frequency==='monthly')total+=amount/days}return total}
