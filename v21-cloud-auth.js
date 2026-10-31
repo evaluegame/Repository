@@ -63,13 +63,13 @@ function submitting(form,handler,label){form.onsubmit=async e=>{
 submitting(login,submitLogin,'Signing in…');submitting(signup,submitSignup,'Creating account…');
 }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Could not load '+src));document.body.appendChild(s)})}
-async function loadApp(){const files=['app-v9.js?v=9','v10-patch.js?v=10','v11-daily-fix.js?v=11','v12-pro.js?v=12','v13-install-roi.js?v=30','v14-active-passive.js?v=19','v19-profit-trend-roi.js?v=20','v27-freedom-sync.js?v=31','v28-freedom-passive.js?v=31','v29-passive-rewards.js?v=29','v31-reliability.js?v=31'];for(const f of files){busy('Loading your dashboard…');await loadScript(f)}}
+async function loadApp(){const files=['v10-patch.js?v=31','v11-daily-fix.js?v=11','v12-pro.js?v=12','v13-install-roi.js?v=30','v14-active-passive.js?v=19','v19-profit-trend-roi.js?v=20','v27-freedom-sync.js?v=31','v28-freedom-passive.js?v=31','v29-passive-rewards.js?v=29','v31-reliability.js?v=31'];for(const f of files){busy('Loading your dashboard…');await loadScript(f)}}
 function accountButton(a){setTimeout(()=>{const holder=document.querySelector('.top-right,.tr');if(!holder||document.getElementById('profitAccountBtn'))return;const b=document.createElement('button');b.id='profitAccountBtn';b.type='button';b.className='profit-account-btn';b.textContent='👤';b.title=`${a.name||a.email}\n${a.email}`;b.onclick=()=>{if(confirm(`Signed in as ${a.email}\n\nLog out?`)){const t=rawGet(CLOUD_TOKEN);if(t)fetch(API+'/logout',{method:'POST',headers:{Authorization:`Bearer ${t}`}}).catch(()=>{});rawRemove(CLOUD_TOKEN);rawRemove(CLOUD_USER);rawRemove(CLOUD_STORAGE);rawRemove(LOCAL_SESSION);location.reload()}};holder.appendChild(b)},350)}
 async function start(a){
  if(window.__profitStarted)return;window.__profitStarted=true;
  const sid=storageIdFor(a,a.storageId||rawGet(CLOUD_STORAGE));rawSet(CLOUD_STORAGE,sid);
  migrateLegacy(sid);patchStorage(sid);document.getElementById('profitAuthRoot')?.remove();document.body.classList.remove('auth-locked');busy('Loading your dashboard…');
- try{await loadApp();accountButton(a);ready();window.__profitAppReady=true;window.dispatchEvent(new Event('profit:ready'))}
+ try{await loadApp();if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js?v=31',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});accountButton(a);ready();window.__profitAppReady=true;window.dispatchEvent(new Event('profit:ready'))}
  catch(e){console.error(e);busy('Profit could not finish loading. Your saved data is still on this device.');const retry=document.createElement('button');retry.textContent='Try again';retry.onclick=()=>location.reload();document.getElementById('profitBootStatus').appendChild(retry)}
 }
 function cachedCloudUser(){try{const u=JSON.parse(rawGet(CLOUD_USER)||'null');return u&&u.id&&u.email?u:null}catch{return null}}

@@ -13,7 +13,7 @@ let loginUser='a',wrong=false,meStatus=200,loginDelay=0,loginCount=0;
 try{
  const context=await browser.newContext({serviceWorkers:'block',viewport:{width:412,height:915},userAgent:'Mozilla/5.0 (Linux; Android 15) ProfitNative/1.6.3'});
  const page=await context.newPage();page.setDefaultTimeout(12000);
- const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const errors=[];page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('PAGEERROR',e.stack||e.message)});
  await page.route('https://profit-auth-api.onrender.com/**',async route=>{
   const req=route.request(),url=new URL(req.url()),key=req.headers().authorization==='Bearer token-b'?'b':'a';
   const reply=(status,body)=>route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'},body:JSON.stringify(body)});
