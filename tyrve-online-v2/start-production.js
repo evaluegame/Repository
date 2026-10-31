@@ -2,15 +2,17 @@ import {spawn} from 'node:child_process';
 
 const port=Number(process.env.PORT||10000);
 const origin=`http://127.0.0.1:${port}`;
+const readerOrigin=new URL(process.env.ALIEXPRESS_MCP_URL||'https://tyrve-aliexpress-reader.onrender.com/mcp').origin;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const child=spawn(process.execPath,['server-v4.js'],{stdio:'inherit',env:process.env});
 let childExit=null;
 child.on('exit',(code,signal)=>{childExit={code,signal}});
 
-async function get(path,timeout=90000){
+async function fetchWithTimeout(url,timeout=90000,headers={}){
  const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),timeout);
- try{return await fetch(origin+path,{signal:ctl.signal,headers:{'user-agent':'TyrveE2E/1.0'}})}finally{clearTimeout(timer)}
+ try{return await fetch(url,{signal:ctl.signal,headers})}finally{clearTimeout(timer)}
 }
+async function get(path,timeout=90000){return fetchWithTimeout(origin+path,timeout,{'user-agent':'TyrveE2E/1.0'})}
 
 let homepageOk=false,apiOk=false,last='';
 for(let i=0;i<20&&!homepageOk;i++){
@@ -40,5 +42,15 @@ if(homepageOk){
 if(!apiOk)console.error(`TYRVE_E2E products=false error=${last.replace(/\s+/g,' ').slice(0,220)}`);
 console.log(`TYRVE_E2E_RESULT ready_for_browsing=${homepageOk&&apiOk}`);
 
+async function keepReaderWarm(){
+ try{
+  const r=await fetchWithTimeout(readerOrigin+'/',12000,{'user-agent':'TyrveReaderKeepalive/1.0'});
+  if(r.status>=500)console.error(`TYRVE_READER_KEEPALIVE ok=false status=${r.status}`);
+ }catch(e){console.error(`TYRVE_READER_KEEPALIVE ok=false error=${String(e?.message||e).slice(0,160)}`)}
+}
+const keepalive=setInterval(keepReaderWarm,8*60*1000);
+keepalive.unref?.();
+
 await new Promise(resolve=>child.on('exit',resolve));
+clearInterval(keepalive);
 process.exit(childExit?.code??0);
