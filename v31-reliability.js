@@ -4,16 +4,16 @@ const $=id=>document.getElementById(id),read=(k,d)=>{try{return JSON.parse(local
 let syncing=false,again=false,timer,started=false;
 const user=()=>read('profit_cloud_user_v1',{});
 const prefs=()=>({freedomPopup:false,...read(PREF,{})});
-function status(text,error=false){const e=$('profitCloudStatus');if(e){e.textContent=text;e.style.color=error?'#b42318':'#24704e'}}
+function status(text,error=false){for(const id of ['profitCloudStatus','profitDashboardSync']){const e=$(id);if(e){e.textContent=text;e.style.color=error?'#b42318':'#24704e'}}}
 function announce(text){const e=$('toast');if(e){e.textContent=text;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3000)}}
 async function sync(manual=false){
  if(syncing){again=true;return false}if(!navigator.onLine){status('Offline · progress saved on this device');return false}
  if(!localStorage.getItem('profit_cloud_token_v1')){status('Reconnect your account to sync',true);return false}
- syncing=true;const button=$('profitSyncNow');if(button)button.disabled=true;status('Syncing your progress…');
+ syncing=true;const button=$('profitSyncNow'),quick=$('profitQuickSync');if(button)button.disabled=true;if(quick)quick.disabled=true;status('Syncing your progress…');
  try{
   const before=window.__profitV27.localState();
   const ok=await window.__profitV27.mergeSafe(false);
-  if(ok){status('Synced · '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+  if(ok){window.__profitV27.checkpoint('Synced progress');status('Synced · '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
    const after=window.__profitV27.localState();
    if(before.profitEntries_v8!==after.profitEntries_v8||before.profitRecurring_v1!==after.profitRecurring_v1){
     // Rehydrate the in-memory ledger without interrupting a form or opening Settings.
@@ -23,7 +23,7 @@ async function sync(manual=false){
    if(manual)announce('Progress synced safely');
   }else{const msg=window.__profitLastSyncError||'Could not sync. Your device progress is safe.';status(msg,true);if(manual)announce(msg)}
   return ok;
- }finally{syncing=false;if(button)button.disabled=false;if(again){again=false;schedule()}}
+ }finally{syncing=false;if(button)button.disabled=false;if(quick)quick.disabled=false;if(again){again=false;schedule()}}
 }
 function schedule(){clearTimeout(timer);timer=setTimeout(()=>sync(false),1200)}
 function popup(){
@@ -55,16 +55,16 @@ function settings(){
  $('profitSyncNow').onclick=()=>sync(true);$('profitReconnectButton').onclick=reconnect;
  $('profitFreedomPopupSetting').checked=prefs().freedomPopup;$('profitFreedomPopupSetting').onchange=e=>localStorage.setItem(PREF,JSON.stringify({...prefs(),freedomPopup:e.target.checked}));$('profitViewFreedom').onclick=popup;
  if(window.AndroidProfit?.hasPreviousProfit?.()){const b=$('profitOpenPrevious');b.hidden=false;b.onclick=()=>window.AndroidProfit.openPreviousProfit()}
- const copies=read('profitRecoverySnapshots_v1',[]),select=$('profitRecoveryCopies');
- if(!copies.length){select.add(new Option('No recovery copies yet',''));$('profitRecoverCopy').disabled=true}
- copies.forEach((x,i)=>select.add(new Option(`${new Date(x.at).toLocaleString()} · ${window.__profitV27.countEntries(x.state)} records`,String(i))));
- $('profitRecoverCopy').onclick=()=>{const copy=copies[Number(select.value)];if(!copy)return;window.__profitV27.checkpoint('Before recovery');const current=window.__profitV27.localState(),deleted=read('profitDeletedEntries_v1',{});for(const row of JSON.parse(copy.state.profitEntries_v8||'[]'))delete deleted[row.id];current.profitDeletedEntries_v1=JSON.stringify(deleted);const recovery={...copy.state,profitDeletedEntries_v1:'{}'};window.__profitV27.applyState(window.__profitV27.mergeStates(current,recovery));location.reload()};
+ const select=$('profitRecoveryCopies');
+ function populate(){const copies=read('profitRecoverySnapshots_v1',[]);select.replaceChildren();$('profitRecoverCopy').disabled=!copies.length;if(!copies.length)select.add(new Option('No recovery copies yet',''));copies.forEach((x,i)=>select.add(new Option(`${new Date(x.at).toLocaleString()} · ${window.__profitV27.countEntries(x.state)} records`,String(i))))}
+ populate();document.addEventListener('click',e=>{if(e.target.closest('#gear'))populate()});
+ $('profitRecoverCopy').onclick=()=>{const copy=read('profitRecoverySnapshots_v1',[])[Number(select.value)];if(!copy)return;window.__profitV27.checkpoint('Before recovery');const current=window.__profitV27.localState(),deleted=read('profitDeletedEntries_v1',{});for(const row of JSON.parse(copy.state.profitEntries_v8||'[]'))delete deleted[row.id];current.profitDeletedEntries_v1=JSON.stringify(deleted);const recovery={...copy.state,profitDeletedEntries_v1:'{}'};window.__profitV27.applyState(window.__profitV27.mergeStates(current,recovery));location.reload()};
  $('profitExplicitLogout').onclick=()=>{if(!confirm('Log out of this account? Your saved records will stay on this device.'))return;const t=localStorage.getItem('profit_cloud_token_v1');if(t)fetch(API+'/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});for(const k of ['profit_cloud_token_v1','profit_cloud_user_v1','profit_cloud_storage_v1','profit_auth_session_v1'])localStorage.removeItem(k);location.reload()};
 }
 function boot(){
- if(started)return;started=true;settings();window.__profitV27.checkpoint('App opened');
+ if(started)return;started=true;const top=document.querySelector('.top');if(top){const banner=document.createElement('div');banner.style.cssText='display:flex;align-items:center;gap:12px;justify-content:space-between;margin:10px 0 14px;padding:10px 12px;background:#fff;border:1px solid #e5e7e2;border-radius:14px';banner.innerHTML='<span id="profitDashboardSync" role="status" aria-live="polite" style="font-size:11px;font-weight:750">Checking cloud progress…</span><button id="profitQuickSync" type="button" style="border:0;border-radius:9px;background:#111;color:#fff;padding:9px 12px;font-weight:800;white-space:nowrap">Sync now</button>';top.insertAdjacentElement('afterend',banner);$('profitQuickSync').onclick=()=>sync(true)}settings();window.__profitV27.checkpoint('App opened');
  window.addEventListener('profit:datachanged',e=>{if(!['profitRecoverySnapshots_v1','profitFreedomV28Migrated_v1'].includes(e.detail?.key))schedule()});
- window.addEventListener('online',()=>sync(false));window.addEventListener('focus',schedule);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});window.addEventListener('profit:cloudstatus',()=>{if(window.__profitCloudAuthRequired)status('Reconnect your account to sync. Local progress is safe.',true)});
+ window.addEventListener('online',()=>sync(false));window.addEventListener('focus',schedule);document.addEventListener('visibilitychange',()=>{if(!document.hidden){schedule();if(prefs().freedomPopup)popup()}});window.addEventListener('profit:cloudstatus',()=>{if(window.__profitCloudAuthRequired)status('Reconnect your account to sync. Local progress is safe.',true)});
  setInterval(()=>{if(!document.hidden)sync(false)},60000);
  if(prefs().freedomPopup)popup();sync(false);
  window.__profitReliability={sync,popup,reconnect};
